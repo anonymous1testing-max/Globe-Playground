@@ -452,7 +452,7 @@ canvas{touch-action:none!important}
 <p class=hint id=q21stat></p></details>
 <details><summary>Sun flare &amp; red halo</summary><label class="fade-switch"><input type=checkbox id=flon><span>Sun lens flare</span></label><label class=r>Flare intensity<input type=range id=fl min=0 max=3 step=.01></label><label class=r>Red halo intensity<input type=range id=hI min=0 max=3 step=.01></label><label class=r>Halo redness (Rayleigh depth)<input type=range id=hd min=.15 max=1.4 step=.01></label><label class=r>Halo cloud breakup<input type=range id=hb min=0 max=1.5 step=.01></label><label class=r>Halo tint<input type=color id=hcol></label><p class=hint>Photographic flare: soft bloom, dense fine rays and faint lens ghosts. The flare shrinks and dims as the planet covers the sun, and vanishes at total eclipse. The red halo is the sunrise and sunset light bent around the planet, strongest when you sit in its shadow. Tint white = natural color. Cloud breakup: thick cloud decks dim and fragment the ring, mostly in its lowest layer (0 = smooth, uniform ring).</p></details>
 <details><summary>Space background</summary><label class=r>Background opacity<input type=range id=skyop min=0 max=1 step=.01></label><label class="fade-switch"><input type=checkbox id=skyday><span>Hide stars in daylight when close to the surface</span></label><p class=hint>Off = the star background stays visible on the day side too, instead of fading to black.</p></details>
-<details class="data-settings"><summary>Settings &amp; data</summary><div class="globebox"><strong>Your saved globe</strong><p class="hint" id="globeStatus"></p><div class="r bt"><button type="button" id="globeDl">Download your saved globe</button><button type="button" id="globeUp">Import saved globe</button></div><label class="fade-switch"><input type=checkbox id="autores" checked><span>Auto smoothness 📱</span></label><p class="hint" id="autoresNote"></p><p class="hint">On phones and tablets only: if the phone keeps struggling, the picture resolution is lowered a little until it runs smoothly (and uses less graphics memory), and raised again when it has plenty of room. Your Graphics slider is never changed.</p><label class="fade-switch"><input type=checkbox id="autobk" checked><span>Auto backup 👮</span></label><p class="hint">When on, your saved globe downloads to your device automatically the moment it is about to be cleared (Reset Data), or as soon as the page notices the browser wiped it. On by default.</p><label class="fade-switch"><input type=checkbox id="cloudon"><span>Google Drive backup ☁</span></label><p class="hint">Backs up your whole globe (settings AND all textures, layers, clouds and maps, even 200 MB+) into a hidden app folder in your own Google Drive, using your own free Drive space. The page can only see that one hidden folder, never your other files. Sign in again after Android clears the browser, then tap Restore.</p><label class="r s">Google Client ID<input type="text" id="cloudCid" placeholder="123-abc.apps.googleusercontent.com" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;min-width:0"></label><p class="hint">Needed once: create a free Web OAuth Client ID in Google Cloud (Drive API on, this page's address as an authorised origin) and paste it here. It is public and only stored in this browser.</p><div class="r bt"><button type="button" id="cloudSign">Sign in with Google</button><button type="button" id="cloudNow">Back up now</button><button type="button" id="cloudGet">Restore from Drive</button></div><p class="hint" id="cloudMsg"></p><input type=file id="globeFile" hidden><p class="hint" id="globeMsg" role="status"></p><p class="hint" id="vaultStatus"></p></div><div class="globebox" id="txx"><strong>Planet textures &amp; file size 📦</strong><p class="hint">Export any saved planet texture as a full-globe (equirectangular) image. Lower the width or quality to make the file smaller, the size shown updates as you move the sliders.</p><label class="r s">Planet<select id="txPl"></select></label><label class="r s">Texture<select id="txKey"></select></label><label class="r">Max width <b id="txWv"></b><input type="range" id="txW" min="0" max="5" step="1" value="5"></label><label class="r">Quality <b id="txQv"></b><input type="range" id="txQ" min="10" max="100" step="1" value="85"></label><label class="r s">Format<select id="txF"><option value="jpeg">JPEG (smallest, no transparency)<option value="webp">WebP (small, keeps transparency)<option value="png">PNG (lossless, largest)</select></label><p class="hint" id="txInfo" role="status">Open this section to scan your saved textures.</p><div class="r bt"><button type="button" id="txExp">Export this texture</button></div><strong>Export entire globe (.glb) 🌍</strong><p class="hint">Downloads ONE file: your whole globe as a real 3D sphere with the planet texture, the bump map (as a normal map) and every specular layer (as a gloss map, and baked into the colour with your Specular colour) built in, with the Rayleigh atmosphere glow around it, so it looks like the globe on screen in Blender, Windows 3D viewer, Quick Look or any web viewer. Night lights, if you have them, are drawn only on the dark side (inside Globe Playground; other viewers show them all the time). The Max width and Quality sliders above shrink the file.</p><label class="fade-switch"><input type="checkbox" id="gbNt" checked><span>Include night lights (glow only on the night side in Globe Playground)</span></label><label class="fade-switch"><input type="checkbox" id="gbCl" checked><span>Include cloud layers (a see-through cloud shell around the globe)</span></label><label class="fade-switch"><input type="checkbox" id="gbSpec" checked><span>Show specular layers in the colour (so they are visible in any viewer, not only as shine)</span></label><label class="fade-switch"><input type="checkbox" id="gbAtm" checked><span>Include atmosphere (Rayleigh glow: blue-white halo thinning into space, plus rim light on the surface; only for planets with air)</span></label><label class="r">Atmosphere strength<input type="range" id="gbAs" min="0" max="100" step="5" value="50"></label><div class="r bt"><button type="button" id="gbExp">Export entire globe (.glb)</button></div><p class="hint" id="gbInfo" role="status"></p><strong>Shrink the saved globe download</strong><p class="hint">Slide left to make "Download your saved globe" smaller by reducing texture size and quality. Auto backups always stay full quality.</p><label class="r">Saved globe size <b id="gxLv"></b><input type="range" id="gxQ" min="0" max="4" step="1" value="0"></label><div class="r bt"><button type="button" id="gxCheck">Check size</button></div><p class="hint" id="gxInfo" role="status"></p></div><label class=r>Menu transparency<input type=range id=pnop min=.05 max=1 step=.01></label><label class=r>Inner boxes &amp; buttons transparency<input type=range id=pnin min=0 max=1 step=.01></label><p class="hint">Turn these down to see your globe through the menu while you edit it. The first fades the whole menu; the second fades the boxes, drop-downs and buttons inside it (all the way down to just their outlines).</p><p class="hint">Reset Data removes this playground's saved settings, textures, slots, and cached maps. Clear Cache removes temporary browser cache entries and repairs malformed layer metadata while keeping your saved planet data.</p><div class="r bt data-actions"><button id="resetData" type="button">Reset Data</button><button id="clearCache" type="button">Clear Cache</button></div><p class="hint" id="dataStatus" role="status"></p></details></div><div id="pf"><button id="sv">Save</button><button id="rs">Reset all</button></div></div>
+<details class="data-settings"><summary>Settings &amp; data</summary><div class="globebox"><strong>Your saved globe</strong><p class="hint" id="globeStatus"></p><div class="r bt"><button type="button" id="globeDl">Download your saved globe</button><button type="button" id="globeUp">Import saved globe</button></div><label class="fade-switch"><input type=checkbox id="autores" checked><span>Auto smoothness 📱</span></label><p class="hint" id="autoresNote"></p><p class="hint">On phones and tablets only: if the phone keeps struggling, the picture resolution is lowered a little until it runs smoothly (and uses less graphics memory), and raised again when it has plenty of room. Your Graphics slider is never changed.</p><label class="fade-switch"><input type=checkbox id="autobk" checked><span>Auto backup 👮</span></label><p class="hint">When on, your saved globe downloads to your device automatically the moment it is about to be cleared (Reset Data), or as soon as the page notices the browser wiped it. On by default.</p><label class="fade-switch"><input type=checkbox id="cloudon"><span>Google Drive backup ☁</span></label><p class="hint">Backs up your whole globe (settings AND all textures, layers, clouds and maps, even 200 MB+) into a hidden app folder in your own Google Drive, using your own free Drive space. The page can only see that one hidden folder, never your other files. Sign in again after Android clears the browser, then tap Restore.</p><label class="r s">Google Client ID<input type="text" id="cloudCid" placeholder="123-abc.apps.googleusercontent.com" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;min-width:0"></label><p class="hint">Needed once: create a free Web OAuth Client ID in Google Cloud (Drive API on, this page's address as an authorised origin) and paste it here. It is public and only stored in this browser.</p><div class="r bt"><button type="button" id="cloudSign">Sign in with Google</button><button type="button" id="cloudNow">Back up now</button><button type="button" id="cloudGet">Restore from Drive</button></div><p class="hint" id="cloudMsg"></p><input type=file id="globeFile" hidden><p class="hint" id="globeMsg" role="status"></p><p class="hint" id="vaultStatus"></p></div><div class="globebox" id="txx"><strong>Planet textures &amp; file size 📦</strong><p class="hint">Export any saved planet texture as a full-globe (equirectangular) image. Lower the width or quality to make the file smaller, the size shown updates as you move the sliders.</p><label class="r s">Planet<select id="txPl"></select></label><label class="r s">Texture<select id="txKey"></select></label><label class="r">Max width <b id="txWv"></b><input type="range" id="txW" min="0" max="5" step="1" value="5"></label><label class="r">Quality <b id="txQv"></b><input type="range" id="txQ" min="10" max="100" step="1" value="85"></label><label class="r s">Format<select id="txF"><option value="jpeg">JPEG (smallest, no transparency)<option value="webp">WebP (small, keeps transparency)<option value="png">PNG (lossless, largest)</select></label><p class="hint" id="txInfo" role="status">Open this section to scan your saved textures.</p><div class="r bt"><button type="button" id="txExp">Export this texture</button></div><strong>Export entire globe (.glb) 🌍</strong><p class="hint">Downloads ONE file: your whole globe as a real 3D sphere with the planet texture, the bump map (as a normal map) and every specular layer (as a gloss map, and baked into the colour with your Specular colour) built in, with the Rayleigh atmosphere glow around it, so it looks like the globe on screen in Blender, Windows 3D viewer, Quick Look or any web viewer. Night lights, if you have them, are drawn only on the dark side (inside Globe Playground; other viewers show them all the time). The Max width and Quality sliders above shrink the file.</p><label class="fade-switch"><input type="checkbox" id="gbNt" checked><span>Include night lights (glow only on the night side in Globe Playground)</span></label><label class="fade-switch"><input type="checkbox" id="gbCl" checked><span>Include clouds (a see-through cloud shell: your cloud layers, generated and weather clouds, or Earth's built-in cloud map when 3D clouds are on)</span></label><label class="fade-switch"><input type="checkbox" id="gbLook" checked><span>Bake the globe's look into the texture (colour grading, desert glare, ocean colour, terrain relief) so the file looks like the globe, not the raw upload</span></label><label class="fade-switch"><input type="checkbox" id="gbSpec" checked><span>Show specular layers in the colour (so they are visible in any viewer, not only as shine)</span></label><label class="fade-switch"><input type="checkbox" id="gbAtm" checked><span>Include atmosphere (Rayleigh glow: blue-white halo thinning into space, plus rim light on the surface; only for planets with air)</span></label><label class="r">Atmosphere strength<input type="range" id="gbAs" min="0" max="100" step="5" value="50"></label><div class="r bt"><button type="button" id="gbExp">Export entire globe (.glb)</button></div><p class="hint" id="gbInfo" role="status"></p><strong>Shrink the saved globe download</strong><p class="hint">Slide left to make "Download your saved globe" smaller by reducing texture size and quality. Auto backups always stay full quality.</p><label class="r">Saved globe size <b id="gxLv"></b><input type="range" id="gxQ" min="0" max="4" step="1" value="0"></label><div class="r bt"><button type="button" id="gxCheck">Check size</button></div><p class="hint" id="gxInfo" role="status"></p></div><label class=r>Menu transparency<input type=range id=pnop min=.05 max=1 step=.01></label><label class=r>Inner boxes &amp; buttons transparency<input type=range id=pnin min=0 max=1 step=.01></label><p class="hint">Turn these down to see your globe through the menu while you edit it. The first fades the whole menu; the second fades the boxes, drop-downs and buttons inside it (all the way down to just their outlines).</p><p class="hint">Reset Data removes this playground's saved settings, textures, slots, and cached maps. Clear Cache removes temporary browser cache entries and repairs malformed layer metadata while keeping your saved planet data.</p><div class="r bt data-actions"><button id="resetData" type="button">Reset Data</button><button id="clearCache" type="button">Clear Cache</button></div><p class="hint" id="dataStatus" role="status"></p></details></div><div id="pf"><button id="sv">Save</button><button id="rs">Reset all</button></div></div>
 <style>
 #glbEdit{display:none;max-height:55%;overflow:auto;-webkit-overflow-scrolling:touch;padding:8px 12px 14px;background:#0b1830;border-top:1px solid #345;font-size:12px;color:#d6e8ff}
 #glbEdit.on{display:block}
@@ -2035,6 +2035,28 @@ async function doExport(){if(!bt.img)return;const W=S.xr,H=W/2,ssN=W<=8192?2:1,D
  catch(e){if(e!=='cancel')err=e}
  finally{r.setRenderTarget(null);if(ps)ps.abort();if(tex)tex.dispose();if(bmTex)bmTex.dispose();sTex.forEach(t=>t.dispose());if(cxo)cxo.t.dispose();XM.uniforms.hasCx.value=0;XM.uniforms.xmicro.value=0;XM.uniforms.xsf.value=0;XM.uniforms.sun=U.sun;XM.uniforms.hasShad=U.hasShad;if(cb){try{cb.dispose()}catch(e){}}if(rtx)rtx.dispose();busy=0;if(err){P2(100,'Export stopped',err==='nostream'?'This browser cannot write a PNG this large. Choose 8k or smaller, or JPEG.':'Not enough memory or GPU time on this device. Try a smaller size.');await new Promise(res=>setTimeout(res,3200))}cp.classList.remove('on')}}
 $('xb').onclick=doExport;
+/* v216: bake the planet's LOOK (colour grading, desert glare control, glare/dark masks, ice + slope rock, ocean colour, relief shading and the specular layers as the globe shows them) into one equirectangular canvas.
+   Used by the globe GLB export and its live preview so the 3D file looks like the globe, not like the raw upload. W = width in px (height W/2). o.surf: 1 = surface renderer (lit ocean + land), 0 = graded colour + hill shade. o.spec: add the specular layers. */
+const BLK={tex:null,img:null,sw:0,busy:Promise.resolve()};
+function bakeLook(W,o){const run=()=>bakeLook0(W,o||{});const p=BLK.busy.then(run,run);BLK.busy=p.catch(()=>{});return p}
+async function bakeLook0(W,o){
+ if(!bt.img)return null;W=Math.max(256,Math.min(W|0,MT,8192))&~255;const H=W/2,surf=!!o.surf;
+ const sw=Math.min(bt.img.width,MT,8192,Math.max(2048,W*2));
+ if(BLK.img!==bt.img||BLK.sw!==sw){if(BLK.tex)BLK.tex.dispose();const c0=document.createElement('canvas');c0.width=sw;c0.height=Math.max(1,sw*bt.img.height/bt.img.width|0);const x0=c0.getContext('2d');x0.imageSmoothingQuality='high';x0.drawImage(bt.img,0,0,c0.width,c0.height);try{seamFix(c0)}catch(e){}
+  const t=new T.CanvasTexture(c0);t.wrapS=T.RepeatWrapping;t.anisotropy=Math.min(8,mx);t.generateMipmaps=true;t.minFilter=T.LinearMipmapLinearFilter;BLK.tex=t;BLK.img=bt.img;BLK.sw=sw}
+ const u=XM.uniforms,DW=Math.min(1024,W),DH=256,rtx=new T.WebGLRenderTarget(DW,DH,{minFilter:T.NearestFilter,magFilter:T.NearestFilter,depthBuffer:false,stencilBuffer:false}),buf=new Uint8Array(DW*DH*4),id=new ImageData(DW,DH),out=document.createElement('canvas');out.width=W;out.height=H;const ox=out.getContext('2d');
+ const sunS=U.sun.value.clone(),shS=U.hasShad?U.hasShad.value:0,sunB=new V(-.35,.85,-.35).normalize();
+ try{u.map.value=BLK.tex;u.mapW.value=sw;u.xW.value=W;u.xH.value=H;u.xm.value=4;u.lyFade.value=1;u.bm.value=U.bm.value;u.hasB.value=U.hasB.value;
+  u.specMap.value=GU.specMap.value;u.hasSpec.value=o.spec?GU.hasSpec.value:0;u.specMapF.value=GU.specMapF.value;u.hasSpecF.value=o.spec?GU.hasSpecF.value:0;
+  u.xmicro.value=surf?1:0;u.xkt.value=10*Math.max(1,Math.round(W/4000))/W;u.on.value.set(surf?1:0,surf?1:0,1,1);u.hasCx.value=0;u.cx.value=null;u.ss.value=o.ss||(W<=2048?2:1);
+  u.xex.value=Math.max(2.5,Math.min(12,1.2*6.283185307*B[S.body][0]/W));u.xsf.value=surf?1:0;u.xd.value.set(DW,DH);
+  for(let y=0;y<H;y+=DH){for(let x=0;x<W;x+=DW){u.xo.value.set(x,y);if(surf){U.sun.value.copy(sunB);if(U.hasShad)U.hasShad.value=0}
+    try{r.setRenderTarget(rtx);r.render(XS,XC);r.readRenderTargetPixels(rtx,0,0,DW,DH,buf)}finally{r.setRenderTarget(null);if(surf){U.sun.value.copy(sunS);if(U.hasShad)U.hasShad.value=shS}}
+    id.data.set(buf);ox.putImageData(id,x,y)}
+   if(o.yield!==false)await nf()}
+ }finally{rtx.dispose();u.xmicro.value=0;u.xsf.value=0;u.hasCx.value=0}
+ return out}
+window.bakeLook=bakeLook;
 // ---- triple vault: extra copies of everything, restored automatically
 const VAULT_DB='ls3d_vault_b',VAULT_CACHE='ls3d-vault-v1';let vdbP=null,vq=Promise.resolve(),vsTimer=0;
 function vdb(){if(!vdbP)vdbP=new Promise(res=>{try{const q=indexedDB.open(VAULT_DB,1);q.onupgradeneeded=()=>{const d=q.result;if(!d.objectStoreNames.contains('v'))d.createObjectStore('v')};q.onsuccess=()=>res(q.result);q.onerror=()=>res(null);setTimeout(()=>res(null),4000)}catch(e){res(null)}});return vdbP}
@@ -2256,7 +2278,7 @@ try{(function(){
   const cc=document.createElement('canvas');cc.width=w;cc.height=h;const cx2=cc.getContext('2d');cx2.fillStyle='#000';cx2.fillRect(0,0,w,h);cx2.globalCompositeOperation='lighter';
   const tc=document.createElement('canvas');tc.width=w;tc.height=h;const tx2=tc.getContext('2d');let used=0;
   for(const l of L){if(!l.on||l.op<=.001)continue;
-   try{gbI.textContent='Adding specular layer '+(l.i+1)+'…';let bm=cache&&cache.get(l.i);if(!bm){bm=await createImageBitmap(l.b,{resizeWidth:w,resizeHeight:h,resizeQuality:'high'});if(cache)cache.set(l.i,bm)}
+   try{gbI.textContent='Adding specular layer '+(l.i+1)+'…';const ck=l.i+'|'+w;let bm=cache&&cache.get(ck);if(!bm){bm=await createImageBitmap(l.b,{resizeWidth:w,resizeHeight:h,resizeQuality:'high'});if(cache)cache.set(ck,bm)}
     x.globalAlpha=l.op;x.drawImage(bm,0,0,w,h);
     let sr=bm;if(l.col!=='#ffffff'){tx2.globalCompositeOperation='source-over';tx2.globalAlpha=1;tx2.clearRect(0,0,w,h);tx2.drawImage(bm,0,0,w,h);tx2.globalCompositeOperation='multiply';tx2.fillStyle=l.col;tx2.fillRect(0,0,w,h);tx2.globalCompositeOperation='destination-in';tx2.drawImage(bm,0,0,w,h);sr=tc}
     cx2.globalAlpha=l.op;cx2.drawImage(sr,0,0,w,h);if(!cache&&bm.close)bm.close();used++}catch(e){}
@@ -2280,20 +2302,24 @@ try{(function(){
    if(y%128===127)await nextF()}
   x.putImageData(out,0,0);const blob=await toPng(c);c.width=c.height=1;return blob?new Uint8Array(await blob.arrayBuffer()):null}
  /* every uploaded cloud layer, stacked like the live globe, becomes one transparent cloud shell */
- async function makeClouds(n,w,h){
+ async function makeClouds(n,w,h,keep){
   const live=(n===S.body),acc=new Float32Array(w*h).fill(1);let used=0;
   const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d',{willReadFrequently:true});
   for(let i=0;i<CLOUD_N;i++){const op=live&&S.cop&&S.cop[i]!=null?+S.cop[i]:1;if(op<=.001)continue;
-   let b=live&&typeof cloudFiles!=='undefined'&&cloudFiles[i]||null;if(!(b instanceof Blob))b=await read(i?'c:'+n+':'+i:'c:'+n);
-   if(!(b instanceof Blob)||!b.size||/^video\//.test(b.type))continue;
+   /* v216: the live slot texture first, so generated and weather-sim clouds export exactly as shown */
+   let lim=null;try{const tx=live&&typeof cloudTex!=='undefined'&&cloudTex[i];if(tx&&tx.image&&(tx.image.width||tx.image.videoWidth))lim=tx.image}catch(e){}
+   let b=null;if(!lim){b=live&&typeof cloudFiles!=='undefined'&&cloudFiles[i]||null;if(!(b instanceof Blob))b=await read(i?'c:'+n+':'+i:'c:'+n);
+   if(!(b instanceof Blob)||!b.size||/^video\//.test(b.type))continue}
    let al=false;try{al=!!(live&&typeof cloudMeshes!=='undefined'&&cloudMeshes[i]&&cloudMeshes[i].material.uniforms.calpha.value>.5)}catch(e){}
-   try{gbI.textContent='Adding cloud layer '+(i+1)+'…';const bm=await createImageBitmap(b,{resizeWidth:w,resizeHeight:h,resizeQuality:'high'});x.clearRect(0,0,w,h);x.drawImage(bm,0,0,w,h);if(bm.close)bm.close();
+   try{gbI.textContent='Adding cloud layer '+(i+1)+'…';x.clearRect(0,0,w,h);if(lim){x.imageSmoothingQuality='high';x.drawImage(lim,0,0,w,h)}else{const bm=await createImageBitmap(b,{resizeWidth:w,resizeHeight:h,resizeQuality:'high'});x.drawImage(bm,0,0,w,h);if(bm.close)bm.close()}
     const d=x.getImageData(0,0,w,h).data;for(let p=0,q=0;q<acc.length;p+=4,q++){const v=al?d[p+3]/255:(d[p]*.3+d[p+1]*.6+d[p+2]*.1)/255;acc[q]*=1-Math.min(1,v*op)}used++}catch(e){}
    await nextF()}
+  if(!used&&live&&n==='earth'&&S.cdef&&S.cvol&&window.__CLDMAP){try{gbI.textContent='Adding the Earth cloud map…';const im=new Image();im.src=window.__CLDMAP;await im.decode();x.clearRect(0,0,w,h);x.imageSmoothingQuality='high';x.drawImage(im,0,0,w,h);
+   const d=x.getImageData(0,0,w,h).data;for(let p=0,q=0;q<acc.length;p+=4,q++)acc[q]=1-Math.min(1,(d[p]*.3+d[p+1]*.6+d[p+2]*.1)/255*1.15);used=1}catch(e){console.warn('globe glb default clouds',e)}}
   if(!used){c.width=c.height=1;return null}
   const col=(live&&/^#[0-9a-f]{6}$/i.test(S.ccolor||''))?S.ccolor:'#ffffff',cr=parseInt(col.slice(1,3),16),cg=parseInt(col.slice(3,5),16),cb=parseInt(col.slice(5,7),16),im=x.createImageData(w,h),o=im.data;
   for(let q=0,p=0;q<acc.length;q++,p+=4){o[p]=cr;o[p+1]=cg;o[p+2]=cb;o[p+3]=Math.round((1-acc[q])*255)}
-  x.putImageData(im,0,0);const blob=await toPng(c);c.width=c.height=1;return blob?{u8:new Uint8Array(await blob.arrayBuffer()),n:used}:null}
+  x.putImageData(im,0,0);if(keep)return{canvas:c,n:used};const blob=await toPng(c);c.width=c.height=1;return blob?{u8:new Uint8Array(await blob.arrayBuffer()),n:used}:null}
  /* Rayleigh glow profile for strength sl (1 = slider centre); used for the file and for live preview opacity */
  function glbAtmosphere(n,sl){
   const bd=B[n];if(!(bd&&bd[1])||!(sl>0))return null;
@@ -2307,47 +2333,60 @@ try{(function(){
   return{atm:{halo,veil:ks>.02?{r:1+Hh*.12,a:Math.min(.3,.06*ks),c:col}:null},rim:es>.01?{c:[1,3,5].map(q=>Math.round(parseInt(ec.slice(q,q+2),16)/255*es*1000)/1000),r:.4}:null}}
  /* Builds the GLB from the collected pieces and the current edits E. hi=false makes a lighter preview (2048 px specular/glow work), hi=true the full-quality download. */
  async function glbFinish(c,E,hi){
-  const pw=hi?c.w4:Math.min(c.w4,2048),ph=c.w4?Math.max(2,Math.round(c.h4*pw/c.w4)):0;c.extra=[];
-  let img=c.img,mime=c.mime,rm=null;
+  /* v216: three resolution levels: E.lo (while a slider moves) = 512 px, preview = 2048 px, download (hi) = full */
+  const lo=!hi&&!!E.lo,pw=hi?c.w4:Math.min(c.w4,lo?512:2048),ph=c.w4?Math.max(2,Math.round(c.h4*pw/c.w4)):0;c.extra=[];
+  let img=c.img,mime=c.mime,rm=null,base=c.fb,btype=c.type;
+  if(c.look&&typeof bakeLook==='function'){const W=hi?c.bw:(lo?512:2048);c.bk=c.bk||{};let e=c.bk[W];
+   if(!e||e.v!==c.lookV){gbI.textContent='Baking the globe look ('+W+' px)…';const cv=await bakeLook(W,{surf:1});
+    if(cv){const bl=await new Promise(rs=>cv.toBlob(rs,'image/jpeg',.92));cv.width=cv.height=1;if(bl){e={v:c.lookV,blob:bl,u8:new Uint8Array(await bl.arrayBuffer())};if(!hi)c.bk[W]=e}}}
+   if(e){img=e.u8;mime='image/jpeg';base=e.blob;btype='image/jpeg';c.extra.push('the globe look baked in ('+(hi?W+' px, ':'')+'colour grading, ocean, relief)')}}
+  /* v216: the preview never uploads textures bigger than it needs (phones could not show 8k previews at all) */
+  const shrink=async(key,u8,mt,W)=>{if(!u8||hi)return u8;c.ps=c.ps||{};const k=key+W;if(c.ps[k]&&c.ps[k].src===u8)return c.ps[k].u8;try{const bm=await createImageBitmap(new Blob([u8],{type:mt}));if(bm.width<=W){bm.close&&bm.close();return u8}const cv=document.createElement('canvas');cv.width=W;cv.height=Math.max(2,Math.round(bm.height*W/bm.width));const q=cv.getContext('2d');q.imageSmoothingQuality='high';q.drawImage(bm,0,0,cv.width,cv.height);bm.close&&bm.close();const b=await new Promise(rs=>cv.toBlob(rs,mt==='image/png'?'image/png':'image/jpeg',.9));cv.width=cv.height=1;const o=b?new Uint8Array(await b.arrayBuffer()):u8;c.ps[k]={src:u8,u8:o};return o}catch(e){return u8}};
+  const PW=lo?1024:2048;img=await shrink('img',img,mime,PW);const nmP=await shrink('nm',c.nm,'image/png',PW),ntP=c.nt?{u8:await shrink('nt',c.nt.u8,c.nt.mime,PW),mime:c.nt.mime}:null;
+  let cl=c.cl;if(c.wantCl&&!hi){const CW=lo?1024:2048;c.clc=c.clc||{};if(!(CW in c.clc)||c.clc[CW].v!==c.cloudV){const q=await makeClouds(c.n,CW,CW/2);c.clc[CW]={v:c.cloudV,u8:q&&q.u8}}cl=c.clc[CW].u8}
+  else if(c.wantCl&&hi&&c.cloudV){const q=await makeClouds(c.n,c.w4,c.h4);cl=q&&q.u8}
   if(c.layers&&c.layers.length&&c.w4){
-   const g=await composeSpec(c.layers,pw,ph,E.k,hi?null:c.cache);
+   const g=await composeSpec(c.layers,pw,ph,E.k,hi?null:c.cache);/* cache is keyed by layer and size */
    if(g){rm=g.u8;c.extra.push(g.n+' specular layer'+(g.n===1?'':'s')+' (gloss map)');
-    if(E.glow>.001&&c.fb){gbI.textContent='Blending specular layers into the colour…';
-     let bm;if(hi)bm=await createImageBitmap(c.fb);else{if(!c.baseBm)c.baseBm=await createImageBitmap(c.fb,{resizeWidth:pw,resizeHeight:ph,resizeQuality:'high'});bm=c.baseBm}
+    if(E.glow>.001&&base){gbI.textContent='Blending specular layers into the colour…';
+     let bm;if(hi)bm=await createImageBitmap(base);else{if(!c.baseBm||c.baseBmSrc!==base||c.baseBm.width!==pw){if(c.baseBm)try{c.baseBm.close()}catch(e){}c.baseBm=await createImageBitmap(base,{resizeWidth:pw,resizeHeight:ph,resizeQuality:'high'});c.baseBmSrc=base}bm=c.baseBm}
      const cD=document.createElement('canvas');cD.width=bm.width;cD.height=bm.height;const dx=cD.getContext('2d');dx.drawImage(bm,0,0);if(hi&&bm.close)bm.close();
      dx.globalCompositeOperation='lighter';dx.globalAlpha=Math.min(1,E.glow);dx.imageSmoothingQuality='high';
      let scc=g.cc;if(E.spcol!=='#ffffff'){/* the global Specular colour tints the shine on the live globe, so tint the baked shine too */scc=document.createElement('canvas');scc.width=g.cc.width;scc.height=g.cc.height;const tq=scc.getContext('2d');tq.drawImage(g.cc,0,0);tq.globalCompositeOperation='multiply';tq.fillStyle=E.spcol;tq.fillRect(0,0,scc.width,scc.height)}
      dx.drawImage(scc,0,0,cD.width,cD.height);if(scc!==g.cc)scc.width=scc.height=1;
-     const b3=await new Promise(rs=>cD.toBlob(rs,c.type,c.type==='image/png'?undefined:.92));cD.width=cD.height=1;
-     if(b3){img=new Uint8Array(await b3.arrayBuffer());mime=c.type;c.extra.push('specular glow baked into colour')}}
+     const b3=await new Promise(rs=>cD.toBlob(rs,btype,btype==='image/png'?undefined:.92));cD.width=cD.height=1;
+     if(b3){img=new Uint8Array(await b3.arrayBuffer());mime=btype;c.extra.push('specular glow baked into colour')}}
     g.cc.width=g.cc.height=1}}
   /* the preview always carries the glow shells (hidden at 0) so the slider can bring them back live */
   const A=c.hasAir?glbAtmosphere(c.n,hi?E.atm:Math.max(E.atm,.5)):null;
   if(A&&(hi?E.atm>0:true)&&E.atm>0)c.extra.push('Rayleigh atmosphere glow'+(A.rim?' and rim light':''));
-  return buildGLB({img,mime,rm,nm:c.nm,cl:c.cl,nt:c.nt,color:[.6,.6,.6],atm:A&&(hi&&!(E.atm>0)?null:A.atm),rim:A&&A.rim,rf:1-.75*E.gloss,ns:E.bump,co:E.cloud,ne:E.night,name:c.name})}
+  return buildGLB({img,mime,rm,nm:nmP,cl,nt:ntP,color:[.6,.6,.6],atm:A&&(hi&&!(E.atm>0)?null:A.atm),rim:A&&A.rim,rf:1-.75*E.gloss,ns:E.bump,co:E.cloud,ne:E.night,name:c.name})}
  const glbInfo=(c,blob)=>mb(blob.size)+' · includes '+((c.parts||[]).concat(c.extra||[]).join(', ')||'plain colour');
  el('gbExp').onclick=async()=>{const n=pl.value,b0=el('gbExp');b0.disabled=true;gbI.textContent='Building the 3D globe…';
-  try{const src=await getBlob(n);let img=null,mime='',note='',nm=null,cl=null,nt=null,parts=[],layers=[],fb=null,rtype='',w4=0,h4=0;
+  try{const src=await getBlob(n);let img=null,mime='',note='',nm=null,cl=null,nt=null,parts=[],layers=[],fb=null,rtype='',w4=0,h4=0,encW=0;
    if(src){const r=await enc(src,Math.min(WL[+sw.value]||8192,8192),+sq.value,sf.value==='png'?'png':'jpeg');if(!r.blob)throw new Error('could not encode the texture');
     fb=r.blob;
     if(n===S.body&&S.seam!==0&&S.seam!==false&&typeof seamFix==='function'){try{const bmS=await createImageBitmap(fb),cS=document.createElement('canvas');cS.width=bmS.width;cS.height=bmS.height;cS.getContext('2d').drawImage(bmS,0,0);if(bmS.close)bmS.close();seamFix(cS);const b2=await new Promise(rs=>cS.toBlob(rs,r.type,r.type==='image/png'?undefined:.92));if(b2)fb=b2;cS.width=cS.height=1}catch(e){}}
     mime=r.type;rtype=r.type;note=r.w+' × '+r.h+' px texture';parts.push('planet texture');
-    w4=Math.min(r.w,4096);h4=Math.max(2,Math.round(r.h*w4/r.w));
+    w4=Math.min(r.w,4096);h4=Math.max(2,Math.round(r.h*w4/r.w));encW=r.w;
     if(el('gbNt')&&el('gbNt').checked){try{gbI.textContent='Adding the night lights map…';const nb=await read('nt:'+n);if(nb){const rn=await enc(nb,w4,+sq.value,'jpeg');if(rn.blob){nt={u8:new Uint8Array(await rn.blob.arrayBuffer()),mime:rn.type};parts.push('night lights (night side only in Globe Playground)')}}else note+=' · no night lights map saved'}catch(e){console.warn('globe glb night',e)}}
     try{const nmv=await makeNormal(n,w4,h4);if(nmv){nm=nmv;parts.push('bump map')}}catch(e){console.warn('globe glb bump',e)}
     try{layers=await collectSpec(n);if(layers.length)parts.push('editable specular layers')}catch(e){console.warn('globe glb specular',e)}
     img=new Uint8Array(await fb.arrayBuffer());
     if(!el('gbCl')||el('gbCl').checked){try{const cg=await makeClouds(n,w4,h4);if(cg){cl=cg.u8;parts.push(cg.n+' cloud layer'+(cg.n===1?'':'s'))}}catch(e){console.warn('globe glb clouds',e)}}}
    else note='no saved texture, plain colour';
+   /* v216: bake the globe's look into the colour map at full size on download (capped by GPU and canvas limits) */
+   let bw=Math.min(encW||2048,8192,MT);while(bw>1024&&bw*bw/2>CA)bw/=2;bw=Math.max(1024,bw&~1023);
    const live=(n===S.body),spm=live?Math.max(0,Math.min(1,(S.spm==null?1:+S.spm)*(S.spopacity==null?1:+S.spopacity))):1,bd=B[n],hasAir=!!(bd&&bd[1]);
    if(el('gbAtm').checked&&!hasAir)note+=' · '+cap(n)+' has no atmosphere, so no shell';
    /* E = everything the preview editor can change; the file is rebuilt from it */
    const E={k:spm,glow:(el('gbSpec')&&el('gbSpec').checked)?spm:0,spcol:(live&&/^#[0-9a-f]{6}$/i.test(S.spcolor||''))?S.spcolor.toLowerCase():'#ffffff',gloss:0,bump:1,cloud:1,night:1,atm:(el('gbAtm').checked&&hasAir)?+el('gbAs').value/50:0};
-   const ctx={n,name:cap(n),img,mime,type:rtype,fb,nm,cl,nt,layers,w4,h4,parts,hasAir,cache:new Map(),baseBm:null,extra:[]};
+   const ctx={n,name:cap(n),img,mime,type:rtype,fb,nm,cl,nt,layers,w4,h4,parts,hasAir,cache:new Map(),baseBm:null,extra:[],
+    live,look:!!(live&&src&&bt.img&&(!el('gbLook')||el('gbLook').checked)),bw,lookV:0,cloudV:0,wantCl:!!(src&&(!el('gbCl')||el('gbCl').checked))};
    gbI.textContent='Packing everything into one file…';await nextF();
    const blob=await glbFinish(ctx,E,false),fnm='planet_'+n+'_globe'+(E.atm>0?'_atmosphere':'')+'.glb';
    window.__pendingGlobeGLB={blob,filename:fnm,info:glbInfo(ctx,blob)};
-   showGlbPreview(blob,fnm,{ctx,E,fns:{finish:glbFinish,atm:glbAtmosphere,info:glbInfo,collect:collectSpec}});gbI.textContent='Preview ready: '+fnm+'. Switch on Edit in the preview to adjust specular layers, atmosphere and more, then download when ready.'
+   showGlbPreview(blob,fnm,{ctx,E,fns:{finish:glbFinish,atm:glbAtmosphere,info:glbInfo,collect:collectSpec,clouds:makeClouds}});gbI.textContent='Preview ready: '+fnm+'. Switch on Edit in the preview to adjust specular layers, atmosphere and more, then download when ready.'
   }catch(e){gbI.textContent='3D export failed: '+(e&&e.message||e)}b0.disabled=false};
  wTxt();gTxt();
  const ds=document.querySelector('details.data-settings');if(ds)ds.addEventListener('toggle',()=>{if(ds.open)scan()});
@@ -2359,7 +2398,7 @@ try{(function(){
 (function(){
  const root=$('glbPreview'),canvas=$('glbPreviewCanvas'),loading=$('glbPreviewLoading'),panel=$('glbEdit'),lookEl=$('glbEditLook'),menuHost=$('glbEditMenu'),sw=$('glbEditOn'),sub=$('glbPreviewInfo');
  const SUB0='Drag to rotate · switch on Edit to tweak specular layers, atmosphere and more without exporting';
- let renderer=null,scene=null,camera=null,model=null,raf=0,drag=null,pending=null,ed=null,rebuildT=0,building=false,again=false;
+ let renderer=null,scene=null,camera=null,model=null,raf=0,drag=null,pending=null,ed=null,rebuildT=0,building=false,again=false,againLo=false,zoomK=1;
  const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}},lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
  function disposeObj(o){o.traverse(m=>{if(m.geometry)m.geometry.dispose();const ms=m.material?(Array.isArray(m.material)?m.material:[m.material]):[];ms.forEach(mt=>{['map','normalMap','roughnessMap','metalnessMap','emissiveMap','alphaMap'].forEach(k=>{try{if(mt[k]&&mt[k].dispose)mt[k].dispose()}catch(e){}});try{if(mt.dispose)mt.dispose()}catch(e){}})})}
  function freeEd(){if(ed&&ed.ctx){ed.ctx.cache.forEach(b=>{try{b.close()}catch(e){}});ed.ctx.cache.clear();if(ed.ctx.baseBm){try{ed.ctx.baseBm.close()}catch(e){}ed.ctx.baseBm=null}}}
@@ -2395,7 +2434,7 @@ try{(function(){
    scene.add(new T.HemisphereLight(0xbad8ff,0x182033,1.35));
    const key=new T.DirectionalLight(0xffffff,2.2);key.position.set(4,3,5);scene.add(key);
    const fill=new T.DirectionalLight(0x6daaff,.65);fill.position.set(-4,-1,-3);scene.add(fill);
-   const loop=()=>{raf=requestAnimationFrame(loop);if(model&&!drag)model.rotation.y+=.0025;if(renderer&&scene&&camera)renderer.render(scene,camera)};loop();
+   const loop=()=>{raf=requestAnimationFrame(loop);if(model&&!drag&&!pts.size)model.rotation.y+=.0025/zoomK;if(renderer&&scene&&camera)renderer.render(scene,camera)};loop();
    return true;
   }catch(e){loading.style.display='grid';loading.textContent='3D preview unavailable in this browser. You can still download the GLB.';console.warn(e);return false}
  }
@@ -2418,24 +2457,58 @@ try{(function(){
    const box=new T.Box3().setFromObject(model),center=box.getCenter(new T.Vector3()),size=box.getSize(new T.Vector3()),max=Math.max(size.x,size.y,size.z)||1;
    model.position.sub(center);model.scale.multiplyScalar(2.15/max);
    if(opts&&opts.rot)model.rotation.copy(opts.rot);
-   loading.style.display='none';sub.textContent=SUB0;resize();applyLive();URL.revokeObjectURL(url);
+   loading.style.display='none';sub.textContent=SUB0;resize();applyLive();URL.revokeObjectURL(url);if(opts&&opts.after)try{opts.after()}catch(e){}
   },undefined,e=>{URL.revokeObjectURL(url);loading.style.display='grid';loading.textContent='Preview could not be rendered. You can still download the GLB.';console.warn('GLB preview load',e)});
  }
  /* specular edits need a re-bake (a couple of seconds at most), so they wait for you to stop moving the slider */
- function scheduleRebuild(){sub.textContent='Updating specular…';clearTimeout(rebuildT);rebuildT=setTimeout(doRebuild,450)}
- async function doRebuild(){
-  if(!ed||!pending)return;if(building){again=true;return}building=true;
-  try{const rot=model?model.rotation.clone():null,blob=await ed.fns.finish(ed.ctx,ed.E,false);pending.blob=blob;loadModel(blob,{rot})}
-  catch(e){sub.textContent='Could not update the preview: '+(e&&e.message||e);console.warn(e)}
-  building=false;if(again){again=false;doRebuild()}
+ /* v216: like the globe, edits preview in LOW resolution while a slider moves and rebuild in HIGH resolution once you let go */
+ function scheduleRebuild(lo){sub.textContent=lo?'Updating (quick preview)…':'Updating in full quality…';clearTimeout(rebuildT);rebuildT=setTimeout(()=>doRebuild(!!lo),lo?120:350)}
+ async function doRebuild(lo){
+  if(!ed||!pending)return;if(building){again=true;againLo=!!lo;return}building=true;
+  try{const rot=model?model.rotation.clone():null;ed.E.lo=!!lo;const blob=await ed.fns.finish(ed.ctx,ed.E,false);ed.E.lo=false;pending.blob=blob;
+   loadModel(blob,{rot,after:()=>{sub.textContent=lo?'Quick preview · let go for full quality':SUB0}})}
+  catch(e){ed.E.lo=false;sub.textContent='Could not update the preview: '+(e&&e.message||e);console.warn(e)}
+  building=false;if(again){again=false;doRebuild(againLo)}
+ }
+ /* fast paths that only swap one texture on the loaded model (no file rebuild) while a slider is moving */
+ function swapTex(mt,cv,alpha){if(!mt||!cv)return;const t=new T.CanvasTexture(cv);t.flipY=false;t.encoding=T.sRGBEncoding;t.wrapS=T.RepeatWrapping;t.wrapT=T.ClampToEdgeWrapping;t.minFilter=T.LinearMipmapLinearFilter;t.anisotropy=4;t.needsUpdate=true;const o=mt.map;mt.map=t;mt.needsUpdate=true;if(o&&o.dispose)setTimeout(()=>o.dispose(),50)}
+ let quickBusy=false,quickAgain=null;
+ async function quick(kind){
+  if(!ed||!model)return;if(quickBusy){quickAgain=kind;return}quickBusy=true;
+  try{const m=mats();
+   if(kind==='look'&&typeof bakeLook==='function'&&ed.ctx.look){const cv=await bakeLook(512,{surf:1,ss:1});swapTex(m.surf,cv)}
+   else if(kind==='cloud'&&m.cloud&&ed.fns.clouds){const q=await ed.fns.clouds(ed.ctx.n,1024,512,true);if(q&&q.canvas)swapTex(m.cloud,q.canvas)}
+   sub.textContent='Quick preview · let go for full quality'}
+  catch(e){console.warn('glb quick preview',e)}
+  quickBusy=false;if(quickAgain){const k=quickAgain;quickAgain=null;quick(k)}
+ }
+ let lookT=0;
+ /* the globe's own menus moved into the preview: Colour & desert, Surface, Night side, Atmosphere, Clouds */
+ function lookChanged(kind,e){
+  if(!ed)return;const c=ed.ctx,E=ed.E,lo=e&&e.type==='input';
+  if(kind==='look')c.lookV++;else if(kind==='cloud')c.cloudV++;
+  if(kind==='night'){E.night=Math.max(0,+(S.nlb==null?1:S.nlb));applyLive();return}
+  if(kind==='atm'){applyLive();return}
+  clearTimeout(lookT);
+  if(lo){sub.textContent='Quick preview…';lookT=setTimeout(()=>quick(kind),90)}
+  else{clearTimeout(rebuildT);sub.textContent='Updating in full quality…';lookT=setTimeout(()=>doRebuild(false),300)}
  }
  /* ---- edit panel ---- */
  const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
  /* ---- the real "Specular mapper & slots" menu, moved into the preview while it is open ---- */
  let home=null,wasOpen=false,mo=null,syncT=0,syncing=false,syncAgain=false;
  const isLive=()=>!!(ed&&ed.ctx&&ed.ctx.n===S.body);
- function menuChanged(){if(!ed||!isLive())return;clearTimeout(syncT);sub.textContent='Updating from the menu…';syncT=setTimeout(syncFromMenu,700)}
+ function menuChanged(e){if(!ed||!isLive())return;clearTimeout(syncT);const lo=!!(e&&e.type==='input');sub.textContent=lo?'Quick preview…':'Updating from the menu…';syncT=setTimeout(()=>syncFromMenu(lo),lo?150:600)}
+ const XM_=[['Colour & desert','look'],['Surface','look'],['Clouds (5 layers)','cloud'],['Night side','night'],['Atmosphere','atm']];let xMounted=[];
+ function mountLook(){
+  if(xMounted.length||!isLive())return;
+  const all=[...document.querySelectorAll('details')].filter(d=>!menuHost.contains(d));
+  XM_.forEach(([t,kind])=>{const d=all.find(q=>{const s=q.querySelector(':scope>summary');return s&&s.textContent.trim()===t});if(!d)return;
+   const ph=document.createElement('span');ph.hidden=true;d.parentNode.insertBefore(ph,d);const was=d.open;d.open=false;d.classList.add('glb-xm');menuHost.appendChild(d);
+   const fi=e=>lookChanged(kind,e),fc=e=>lookChanged(kind,e);d.addEventListener('input',fi,true);d.addEventListener('change',fc,true);xMounted.push({d,ph,was,fi,fc})})}
+ function unmountLook(){xMounted.forEach(m=>{m.d.removeEventListener('input',m.fi,true);m.d.removeEventListener('change',m.fc,true);m.d.classList.remove('glb-xm');m.d.open=m.was;m.ph.parentNode.insertBefore(m.d,m.ph);m.ph.remove()});xMounted=[]}
  function mountMenu(){
+  mountLook();
   const d=$('specMenu');if(!d||home||!isLive())return;
   home=document.createElement('span');home.hidden=true;d.parentNode.insertBefore(home,d);
   wasOpen=d.open;d.open=true;menuHost.appendChild(d);
@@ -2443,29 +2516,29 @@ try{(function(){
   mo=new MutationObserver(menuChanged);mo.observe(d,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['class']});
  }
  function unmountMenu(){
-  clearTimeout(syncT);const d=$('specMenu');
+  unmountLook();clearTimeout(syncT);clearTimeout(lookT);const d=$('specMenu');
   if(mo){mo.disconnect();mo=null}
   if(d){d.removeEventListener('input',menuChanged,true);d.removeEventListener('change',menuChanged,true)}
   if(home&&d){home.parentNode.insertBefore(d,home);d.open=wasOpen}
   if(home){home.remove();home=null}
  }
- async function syncFromMenu(){
+ async function syncFromMenu(lo){
   if(!ed||!pending||!isLive())return;if(syncing){syncAgain=true;return}syncing=true;
   try{
    const c=ed.ctx,E=ed.E,L=await ed.fns.collect(c.n);
    c.cache.forEach(b=>{try{b.close()}catch(e){}});c.cache.clear();c.layers=L;
    const k=Math.max(0,Math.min(1,(S.spm==null?1:+S.spm)*(S.spopacity==null?1:+S.spopacity)));
    E.k=k;E.glow=(ed.glowOn&&k>0)?k:0;E.spcol=/^#[0-9a-f]{6}$/i.test(S.spcolor||'')?S.spcolor.toLowerCase():'#ffffff';
-   await doRebuild();
+   await doRebuild(!!lo);
   }catch(e){sub.textContent='Could not update from the menu: '+(e&&e.message||e);console.warn(e)}
-  syncing=false;if(syncAgain){syncAgain=false;syncFromMenu()}
+  syncing=false;if(syncAgain){syncAgain=false;syncFromMenu(false)}
  }
  function buildPanel(){
   if(!ed){lookEl.innerHTML='';return}
   const live=isLive();
   const c=ed.ctx,E=ed.E,pc=v=>Math.round(v*100);
   const rg=(id,lab,min,max,val)=>'<label class="r">'+lab+'<input type="range" id="'+id+'" min="'+min+'" max="'+max+'" step="1" value="'+val+'"></label>';
-  let h=live?'<p class="hint">This is your real Specular mapper &amp; slots menu: layers, images, slots and the mapper editor all work here, apply to the live globe too, and re-bake this preview a moment after each change.</p>':'<p class="hint">This world is not the one open on the globe, so its specular layers can only be tuned here. Open it on the globe to use the full Specular mapper &amp; slots menu.</p>';
+  let h=live?'<p class="hint">These are the globe\'s own menus (Colour &amp; desert, Surface, Clouds, Night side, Atmosphere and the Specular mapper &amp; slots): every change applies to the live globe too. While you slide, the preview updates in low resolution; let go and it rebuilds in full quality.</p>':'<p class="hint">This world is not the one open on the globe, so its specular layers can only be tuned here. Open it on the globe to use the full Specular mapper &amp; slots menu.</p>';
   if(!live){h+='<div class="spec-card"><h4>Specular layers <small>('+c.layers.length+' in this export)</small></h4>';
   if(c.layers.length){c.layers.forEach((l,j)=>{h+='<div class="spec-layer-block"><div class="spec-layer-title">Layer '+(l.i+1)+' · '+(l.i===0?'Base':'Additive')+' map</div>'
     +'<div class="spec-pick-row"><span class="spec-chip ok" style="grid-column:1/3">Image in export</span><canvas class="thumb" data-th="'+j+'" width="64" height="32"></canvas></div>'
@@ -2480,15 +2553,15 @@ try{(function(){
   if(c.nt)h+=rg('geN','Night lights',0,100,pc(E.night));
   h+='</div><div class="r bt"><button type="button" id="geReset">Reset edits</button></div>';
   lookEl.innerHTML=h;
-  const on=(id,fn,spec)=>{const e=lookEl.querySelector('#'+id);if(!e)return;e.oninput=()=>{fn(e);if(spec)scheduleRebuild();else applyLive()}};
+  const on=(id,fn,spec)=>{const e=lookEl.querySelector('#'+id);if(!e)return;e.oninput=()=>{fn(e);if(spec)scheduleRebuild(true);else applyLive()};if(spec)e.onchange=()=>{fn(e);scheduleRebuild(false)}};
   on('geK',e=>E.k=e.value/100,1);on('geG',e=>E.glow=e.value/100,1);on('geC',e=>E.spcol=e.value.toLowerCase(),1);
   on('geSun',e=>{sunDeg=+e.value;lsSet('ls3d_glbsun',String(sunDeg));setSun(sunDeg)});on('geB',e=>E.bump=e.value/100);on('geS',e=>E.gloss=e.value/100);on('geA',e=>E.atm=e.value/50);on('geL',e=>E.cloud=e.value/100);on('geN',e=>E.night=e.value/100);
-  lookEl.querySelectorAll('[data-le]').forEach(e=>e.onchange=()=>{c.layers[+e.dataset.le].on=e.checked;scheduleRebuild()});
-  lookEl.querySelectorAll('[data-lo]').forEach(e=>e.oninput=()=>{c.layers[+e.dataset.lo].op=e.value/100;scheduleRebuild()});
-  lookEl.querySelectorAll('[data-lc]').forEach(e=>e.oninput=()=>{c.layers[+e.dataset.lc].col=e.value.toLowerCase();scheduleRebuild()});
+  lookEl.querySelectorAll('[data-le]').forEach(e=>e.onchange=()=>{c.layers[+e.dataset.le].on=e.checked;scheduleRebuild(false)});
+  lookEl.querySelectorAll('[data-lo]').forEach(e=>{e.oninput=()=>{c.layers[+e.dataset.lo].op=e.value/100;scheduleRebuild(true)};e.onchange=()=>{c.layers[+e.dataset.lo].op=e.value/100;scheduleRebuild(false)}});
+  lookEl.querySelectorAll('[data-lc]').forEach(e=>{e.oninput=()=>{c.layers[+e.dataset.lc].col=e.value.toLowerCase();scheduleRebuild(true)};e.onchange=()=>scheduleRebuild(false)});
   lookEl.querySelectorAll('[data-ln]').forEach(e=>e.oninput=()=>{c.layers[+e.dataset.ln].name=e.value.trim()||('Layer '+(c.layers[+e.dataset.ln].i+1))});
   lookEl.querySelectorAll('canvas[data-th]').forEach(cv=>{const l=c.layers[+cv.dataset.th];if(!l||!l.b)return;createImageBitmap(l.b,{resizeWidth:64,resizeHeight:32,resizeQuality:'high'}).then(bm=>{try{cv.getContext('2d').drawImage(bm,0,0,64,32)}catch(e){}bm.close()}).catch(()=>{})});
-  lookEl.querySelector('#geReset').onclick=()=>{if(!ed)return;const keep=isLive()?{k:E.k,glow:E.glow,spcol:E.spcol}:{};Object.assign(ed.E,ed.E0,keep);if(!isLive())c.layers.forEach((l,j)=>Object.assign(l,ed.L0[j]));buildPanel();scheduleRebuild()};
+  lookEl.querySelector('#geReset').onclick=()=>{if(!ed)return;const keep=isLive()?{k:E.k,glow:E.glow,spcol:E.spcol}:{};Object.assign(ed.E,ed.E0,keep);if(!isLive())c.layers.forEach((l,j)=>Object.assign(l,ed.L0[j]));buildPanel();scheduleRebuild(false)};
  }
  function showEdit(on){panel.classList.toggle('on',!!on);sw.checked=!!on;lsSet('ls3d_glbedit',on?'1':'0');setTimeout(resize,30)}
  sw.onchange=()=>showEdit(sw.checked);
@@ -2500,13 +2573,22 @@ try{(function(){
   buildPanel();mountMenu();showEdit(lsGet('ls3d_glbedit')==='1');
   loadModel(blob,null);
  }
- function resize(){if(!renderer||!camera)return;const w=Math.max(1,canvas.clientWidth),h=Math.max(1,canvas.clientHeight);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
- function close(){clearTimeout(rebuildT);unmountMenu();root.classList.remove('on');root.setAttribute('aria-hidden','true');disposePreview();freeEd();ed=null;lookEl.innerHTML=''}
- canvas.addEventListener('pointerdown',e=>{if(!model)return;drag={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId)});
- canvas.addEventListener('pointermove',e=>{if(!drag||!model)return;model.rotation.y+=(e.clientX-drag.x)*.008;model.rotation.x+=(e.clientY-drag.y)*.008;drag={x:e.clientX,y:e.clientY}});
- canvas.addEventListener('pointerup',()=>drag=null);canvas.addEventListener('pointercancel',()=>drag=null);
+ function resize(){if(!renderer||!camera)return;const w=Math.max(1,canvas.clientWidth),h=Math.max(1,canvas.clientHeight);renderer.setSize(w,h,false);camera.aspect=w/h;
+  /* v216: frame the whole globe + glow on tall phone screens too (was cropped to the middle of the planet) */
+  const v=camera.fov*Math.PI/360,hz=Math.atan(Math.tan(v)*camera.aspect);camera.position.set(0,0,1.16/Math.sin(Math.min(v,hz))/zoomK);camera.updateProjectionMatrix()}
+ function close(){clearTimeout(rebuildT);unmountMenu();zoomK=1;root.classList.remove('on');root.setAttribute('aria-hidden','true');disposePreview();freeEd();ed=null;lookEl.innerHTML=''}
+ /* drag = rotate, pinch or mouse wheel = zoom (v216) */
+ const pts=new Map();let pin=0;const zoomTo=k=>{zoomK=Math.max(1,Math.min(8,k));resize()};
+ canvas.style.touchAction='none';
+ canvas.addEventListener('pointerdown',e=>{if(!model)return;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});try{canvas.setPointerCapture(e.pointerId)}catch(_){}if(pts.size===2){const [a,b]=[...pts.values()];pin=Math.hypot(a.x-b.x,a.y-b.y)/zoomK;drag=null}else drag={x:e.clientX,y:e.clientY}});
+ canvas.addEventListener('pointermove',e=>{if(!model||!pts.has(e.pointerId))return;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pts.size>=2&&pin>0){const [a,b]=[...pts.values()];zoomTo(Math.hypot(a.x-b.x,a.y-b.y)/pin);return}
+  if(!drag)return;const sp=.008/zoomK;model.rotation.y+=(e.clientX-drag.x)*sp;model.rotation.x+=(e.clientY-drag.y)*sp;drag={x:e.clientX,y:e.clientY}});
+ const up=e=>{pts.delete(e.pointerId);if(pts.size<2)pin=0;drag=pts.size===1?Object.assign({},[...pts.values()][0]):null};
+ canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
+ canvas.addEventListener('wheel',e=>{if(!model)return;e.preventDefault();zoomTo(zoomK*(e.deltaY<0?1.12:1/1.12))},{passive:false});
  $('glbPreviewClose').onclick=close;
- $('glbPreviewAgain').onclick=()=>{if(!pending)return;if(ed){clearTimeout(rebuildT);doRebuild()}else loadModel(pending.blob,null)};
+ $('glbPreviewAgain').onclick=()=>{if(!pending)return;if(ed){clearTimeout(rebuildT);doRebuild(false)}else loadModel(pending.blob,null)};
  $('glbPreviewDownload').onclick=async()=>{
   if(!pending)return;const b=$('glbPreviewDownload'),t=b.textContent;b.disabled=true;b.textContent='Building full quality…';
   try{let blob=pending.blob,info=window.__pendingGlobeGLB&&window.__pendingGlobeGLB.info||'';
