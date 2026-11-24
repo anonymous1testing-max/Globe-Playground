@@ -1409,7 +1409,7 @@ vec3 aurora(vec3 rd,float tMax){
   float fold=(opN(vec2(mlon*5.,tSec*.025))-.5)*radians(3.2)+(opN(vec2(mlon*19.+7.,tSec*.07))-.5)*radians(.9)+(opN(vec2(mlon*61.+3.,tSec*.2))-.5)*radians(.25);
   float d=(aml-oc-fold)/radians(.35+.22*auKp),cur=exp(-d*d*2.2);
   float rays=.35+.65*pow(opN(vec2(mlon*260.+fold*55.,tSec*.6)),1.6);
-  float lo=smoothstep(92.,108.,h),grn=lo*exp(-max(h-112.,0.)/38.),red=smoothstep(150.,220.,h)*exp(-max(h-230.,0.)/70.),pur=smoothstep(90.,96.,h)*(1.-smoothstep(97.,108.,h));
+  float lo=smoothstep(92.,108.,h),grn=lo*exp(-max(h-112.,0.)/38.),red=smoothstep(150.,220.,h)*exp(-max(h-230.,0.)/55.)*(1.-smoothstep(255.,320.,h)),pur=smoothstep(90.,96.,h)*(1.-smoothstep(97.,108.,h));
   vec3 em=vec3(.16,1.,.36)*grn+vec3(1.,.13,.2)*red*(.35+.4*act)+vec3(.75,.25,1.)*pur*.7*smoothstep(.45,.8,act);
   acc+=em*cur*rays*dark*(.55+.45*night)*ds;}
  return acc*auK*.0045*(.4+act);}
@@ -1422,7 +1422,7 @@ vec3 airglow(vec3 rd,float tMax){
   return gc*dark*agK*.0035/max(rd.y+.06,.1)*(.85+.3*opN(vec2(atan(rd.z,rd.x)*9.,tSec*.01)));}
  float p=sqrt(max(c0*c0-b*b,0.)),h=p-R;if(b>=0.||h<0.)return vec3(0.);
  vec3 n=normalize(o-rd*b);vec3 g=geoM*n;float dark=smoothstep(.0,-.2,dot(g,sunE));
- return (gc*exp(-pow((h-95.)/4.5,2.))+vec3(1.,.25,.2)*.35*exp(-pow((h-245.)/30.,2.)))*dark*agK*.09;}
+ return gc*exp(-pow((h-95.)/7.,2.))*dark*agK*.05*(1.-smoothstep(900.,2500.,cA));}/* only from low orbit: farther away the layer is thinner than a pixel */
 /* mirages (screen-space): hot ground or warm sea bends rays upward, so the sky and far shore appear upside-down in a thin band below the horizon (inferior mirage);
    over cold sea the opposite happens and the distant coast stretches and stacks into towers (Fata Morgana) */
 vec3 mirage(vec3 col,vec3 rd){
