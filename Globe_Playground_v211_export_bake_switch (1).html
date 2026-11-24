@@ -11350,7 +11350,7 @@ OPX.draw=(t,a)=>{
  u.kGlory.value=air?pick('glory',cov>.2?1:0)*(seD>0?1:0):0;u.aGlo.value=md('glory')===2?.7:0;
  /* v217: heiligenschein needs dewy grass / vegetation, so never over open water (it showed as a white blob on the sea opposite the sun) */
  {const nw=performance.now(),HW=OPX.hw||(OPX.hw={t:-1e9,la:9,lo:9,w:false});if(nw-HW.t>800&&(Math.abs(st.lat-HW.la)>2e-4||Math.abs(st.lon-HW.lo)>2e-4||nw-HW.t>4000)){HW.t=nw;HW.la=st.lat;HW.lo=st.lon;try{const M=typeof hm!=='undefined'&&hm&&hm.w?hm:null;let n=0;if(M){const cx=Math.floor((st.lon/6.283185307+.5)*M.W),cy=Math.floor((1-(st.lat/Math.PI+.5))*M.H);for(let j=-1;j<=1;j++)for(let i=-1;i<=1;i++){const y=Math.max(0,Math.min(M.H-1,cy+j)),x=((cx+i)%M.W+M.W)%M.W;n+=M.w[y*M.W+x]}}HW.w=n>=5}catch(e){HW.w=false}}
-  u.kHeil.value=HW.w?0:pick('heil',(seD>3&&seD<50&&alt<3)?1:0)*(seD>0?1:0);if(HW.w)u.aGlo.value=0}
+  u.kHeil.value=HW.w?0:pick('heil',(seD>3&&seD<50&&(st.alt||0)<.06)?1:0)*(seD>0?1:0);/* v217: Auto only when you stand or drive near the ground (it is the glow round your own shadow); from the air it read as a floating white dot */if(HW.w)u.aGlo.value=0}
  u.kAnti.value=air?pick('anti',(seD>-4&&seD<10&&cov>.15&&cov<.85)?1:0)*(seD>-6&&seD<15?1:0)*(alt<30?1:0):0;
  u.kGf.value=(sunM.material.uniforms.uGF&&sunM.visible)?sunM.material.uniforms.uGF.value:0;u.sqF.value=sunM.material.uniforms.uSq?sunM.material.uniforms.uSq.value:1;u.sunA.value.copy(sunM.position).sub(cam.position).normalize();
  const any=u.kGf.value+u.kRain.value+u.kHalo.value+u.kPill.value+u.kCor.value+u.kGlory.value+u.kHeil.value+u.kAnti.value;OPX.st={sEl:seD,cov,rain,any};
