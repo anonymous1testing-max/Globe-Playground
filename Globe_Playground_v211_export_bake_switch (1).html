@@ -1389,12 +1389,13 @@ vec3 mbSample(){vec2 px=fwidth(vU);vec3 c0=texture2D(tC,vU).rgb;if(mbK<.001||tOf
 float opH(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
 float opN(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(opH(i),opH(i+vec2(1.,0.)),f.x),mix(opH(i+vec2(0.,1.)),opH(i+vec2(1.,1.)),f.x),f.y);}
 /* aurora: glowing curtains in an oval round each magnetic pole, 95-320 km up: green oxygen low, red oxygen high, a pink-purple nitrogen fringe at the bottom when it is strong */
-vec3 aurora(vec3 rd){
+vec3 aurora(vec3 rd,float tMax){
  if(auK<.001)return vec3(0.);
  vec3 o=vec3(0.,R+cA,0.);float r0=R+92.,r1=R+330.,oo=dot(o,o),b=dot(o,rd),D1=b*b-(oo-r1*r1);if(D1<=0.)return vec3(0.);
  float s1=sqrt(D1),tA=max(-b-s1,0.),tB=-b+s1;if(tB<=0.)return vec3(0.);
  float D0=b*b-(oo-r0*r0);if(D0>0.){float s0=sqrt(D0);if(oo>r0*r0){if(-b-s0>0.)tB=min(tB,-b-s0);}else tA=max(tA,-b+s0);}
  float Dg=b*b-(oo-R*R);if(Dg>0.&&-b-sqrt(Dg)>0.)tB=min(tB,-b-sqrt(Dg));
+ tB=min(tB,tMax);/* stops at mountains, ground or models in front */
  if(tB<=tA)return vec3(0.);
  vec3 e1=normalize(cross(magP,vec3(0.,1.,0.))+vec3(1e-5)),e2=cross(magP,e1),acc=vec3(0.);
  float ds=(tB-tA)/22.,j=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(.06711056,.00583715)))),act=clamp(auKp/9.,0.,1.);
@@ -1413,10 +1414,10 @@ vec3 aurora(vec3 rd){
   acc+=em*cur*rays*dark*(.55+.45*night)*ds;}
  return acc*auK*.0045*(.4+act);}
 /* airglow: a faint green layer of glowing oxygen ~95 km up. From space it is a thin line above the night limb; from the ground the night sky never goes fully black and glows a little toward the horizon */
-vec3 airglow(vec3 rd){
+vec3 airglow(vec3 rd,float tMax){
  if(agK<.001)return vec3(0.);
  vec3 o=vec3(0.,R+cA,0.);float c0=R+cA,b=c0*rd.y;vec3 gc=vec3(.32,1.,.42);
- if(cA<88.){float Dg=b*b-cA*(2.*R+cA);if(Dg>0.&&-b-sqrt(Dg)>0.)return vec3(0.);
+ if(cA<88.){float Dg=b*b-cA*(2.*R+cA);if(tMax<1e8||(Dg>0.&&-b-sqrt(Dg)>0.))return vec3(0.);
   vec3 g=geoM*normalize(o+rd*120.);float dark=smoothstep(.02,-.2,dot(g,sunE));
   return gc*dark*agK*.0035/max(rd.y+.06,.1)*(.85+.3*opN(vec2(atan(rd.z,rd.x)*9.,tSec*.01)));}
  float p=sqrt(max(c0*c0-b*b,0.)),h=p-R;if(b>=0.||h<0.)return vec3(0.);
@@ -1452,7 +1453,7 @@ float cl=.55*rgN(n*4.+3.7)+.30*rgN(n*11.+9.1)+.15*rgN(n*27.+1.3),br=mix(.10,.50,
 vec3 t=exp(-bR*2.*sqrt(2.*R*Hr)*hd),c=pow(t/max(t.r,1e-9),vec3(.35));return c*hcol*w*prof*brk*hI*.93;}
 vec3 aglow(vec3 rd){float Ht=Ra-R,c0=R+cA,b=c0*rd.y;if(b>=0.)return vec3(0.);float p=sqrt(max(c0*c0-b*b,0.)),h2=p-(R+Ht);if(p<R)return vec3(0.);vec3 n=(vec3(0.,c0,0.)-rd*b)/p;float mu=dot(n,normalize(sun)),lt=smoothstep(-.25,.45,mu)*.96+.04,far=smoothstep(Ht*4.,R*.6,cA),L=Ht*max(gGs,.1)*(.6+1.2*far);vec3 ac=mix(bR/max(max(bR.r,bR.g),bR.b),vec3(1.),.45);return ac*lt*far*exp(-max(h2,0.)/L)*gGl*.35;}
 void main(){main1();if(hasA>.5&&(hI>.001||gGl>.001)){vec3 dv=vec3(((tOff.x+vU.x*tOff.z)*2.-1.)*tH*asp,((tOff.y+vU.y*tOff.w)*2.-1.)*tH,-1.),rd=normalize(cr*dv);if(hI>.001)gl_FragColor.rgb+=halo(rd);if(gGl>.001)gl_FragColor.rgb+=aglow(rd);}
-if(hasA>.5&&(auK>.001||agK>.001)){vec3 dvq=vec3(((tOff.x+vU.x*tOff.z)*2.-1.)*tH*asp,((tOff.y+vU.y*tOff.w)*2.-1.)*tH,-1.),rdq=normalize(cr*dvq);vec3 ad=aurora(rdq)+airglow(rdq);gl_FragColor.rgb+=ad*(1.-.6*smoothstep(.2,.7,dot(gl_FragColor.rgb,vec3(.3,.6,.1))));}if(hasA>.5&&(stormG>.001||flashK>.001)){vec3 g0=gl_FragColor.rgb;float l=dot(g0,vec3(.3,.6,.1));vec3 gs=vec3(l)*vec3(.80,.86,1.)*.52+vec3(.012,.014,.02);g0=mix(g0,gs,stormG);g0=g0*(1.+flashK*.8)+vec3(.30,.34,.5)*flashK*.35;gl_FragColor.rgb=g0;}}`;
+if(hasA>.5&&(auK>.001||agK>.001)){vec3 dvq=vec3(((tOff.x+vU.x*tOff.z)*2.-1.)*tH*asp,((tOff.y+vU.y*tOff.w)*2.-1.)*tH,-1.),rdq=normalize(cr*dvq);float dpq=texture2D(tD,vU).x,tq=1e9;if(useD>.5&&dpq<.99999)tq=nr*fr/(fr*(1.-dpq)+dpq*nr)*length(dvq);vec3 ad=aurora(rdq,tq)+airglow(rdq,tq);gl_FragColor.rgb+=ad*(1.-.6*smoothstep(.2,.7,dot(gl_FragColor.rgb,vec3(.3,.6,.1))));}if(hasA>.5&&(stormG>.001||flashK>.001)){vec3 g0=gl_FragColor.rgb;float l=dot(g0,vec3(.3,.6,.1));vec3 gs=vec3(l)*vec3(.80,.86,1.)*.52+vec3(.012,.014,.02);g0=mix(g0,gs,stormG);g0=g0*(1.+flashK*.8)+vec3(.30,.34,.5)*flashK*.35;gl_FragColor.rgb=g0;}}`;
 const PM_=new T.ShaderMaterial({depthTest:false,depthWrite:false,extensions:{derivatives:true},uniforms:Object.assign({tC:{value:null},tD:{value:null},cp:{value:new V()},cr:{value:new T.Matrix3()},tH:{value:Math.tan(Math.PI/6)},asp:{value:1},nr:{value:.1},fr:{value:1e4},nS:{value:16},nL:{value:5},hasA:{value:1},gn:{value:3.5},lb:{value:0},cA:{value:1},useD:{value:1},uInt:{value:1},gM:{value:.8},hI:{value:0},hd:{value:.6},hcol:{value:new T.Color(1,1,1)},ecl:{value:0},hb:{value:1},ovc:{value:0},ctp:{value:9},mbA:{value:new T.Matrix3()},mbB:{value:new V()},mbK:{value:0},tOff:{value:new T.Vector4(0,0,1,1)},gGl:{value:1},gGs:{value:1},stormG:{value:0},flashK:{value:0},uwK:{value:0},uwW:{value:new T.Vector3(.05,.2,.3)},uwA:{value:new T.Vector3(1,1,1)},msK:{value:1},agK:{value:0},auK:{value:0},auKp:{value:4},tSec:{value:0},mirK:{value:0},fmK:{value:0},geoM:{value:new T.Matrix3()},magP:{value:new V(0,1,0)},sunE:{value:new V(1,0,0)}},AU),vertexShader:`varying vec2 vU;void main(){vU=uv;gl_Position=vec4(position.xy,0.,1.);}`,fragmentShader:POST});
 const PS=new T.Scene(),PC=new T.OrthographicCamera(-1,1,1,-1,0,1),PQ=new T.Mesh(new T.PlaneGeometry(2,2),PM_);PQ.frustumCulled=false;PS.add(PQ);
 // ---- Motion blur runs AFTER the atmosphere pass, over the finished picture, so the glow, haze and planet rim blur together.
