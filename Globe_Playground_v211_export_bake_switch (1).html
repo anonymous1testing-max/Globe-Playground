@@ -1272,7 +1272,7 @@ const GFS_LITE=COM+SEAG+`uniform sampler2D map;uniform vec2 hd;uniform float fad
 `+HF+`
 vec2 lgr(vec2 p,float c){float a=vn(p,c);return vec2(vn(p+vec2(.5,0.),c)-a,vn(p+vec2(0.,.5),c)-a)*2.;}
 /* cheap terrain shadows: 8 coarse steps toward the sun (the full shader uses up to 48) */
-float lsh(vec2 enF,float yF){vec2 sd=vec2(sun.x*hd.x-sun.z*hd.y,-sun.x*hd.y-sun.z*hd.x);float hz=length(sd);if(hz<1e-4)return 1.;if(sun.y<-.06)return 0.;sd/=hz;float te=max(sun.y,.0004)/hz,tau=.05*(.85+.3*fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(.06711056,.00583715))))),s=1.,hMx=min(.0018*R,bmS*1.7)+.5,mxD=clamp(max(hMx-yF,0.)/te,30.,300.),g2=pow(mxD/.05,1./7.);
+float lsh(vec2 enF,float yF){vec2 sd=vec2(sun.x*hd.x-sun.z*hd.y,-sun.x*hd.y-sun.z*hd.x);float hz=length(sd);if(hz<1e-4)return 1.;if(sun.y<-.06)return 0.;sd/=hz;float te=max(sun.y,.0004)/hz,tau=.05,s=1.,hMx=min(.0018*R,bmS*1.7)+.5,mxD=clamp(max(hMx-yF,0.)/te,30.,300.),g2=pow(mxD/.05,1./7.);
  for(int i=0;i<8;i++){vec2 e=enF+sd*tau;float lod=max(0.,log2(tau*.5*mapW/(6.2831853*R*cphi)))+1.,yT=hF(e,lod,max(.4,tau*.06))-dot(e,e)/(2.*R),yR=yF+tau*te,k=.008*tau+.0006;if(yR>hMx)break;s=min(s,smoothstep(-k,k,yR-yT));tau*=g2;}return s;}
 void main(){
  vec2 en=vEN;float al=(1.-smoothstep(150.,210.,length(en)))*fade*smoothstep(.04,.20,cphi);if(al<.02)discard;
@@ -10333,11 +10333,11 @@ try{
 const coarse=(()=>{try{return matchMedia('(pointer:coarse)').matches}catch(e){return false}})();
 const STEPS=coarse?120:160,STEP0=coarse?24:44,OCT=coarse?3:4;
 const cl=(x,a,b)=>x<a?a:x>b?b:x,ss=(a,b,x)=>{x=cl((x-a)/(b-a),0,1);return x*x*(3-2*x)};
-const VS='varying vec3 vO;void main(){vO=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}';
+const VS='varying vec3 vO;varying float vVz;void main(){vO=position;vec4 mv=modelViewMatrix*vec4(position,1.);vVz=-mv.z;gl_Position=projectionMatrix*mv;}';
 const FS=`#define STEPS ${STEPS}
 #define OCT ${OCT}
-uniform vec3 uCamO,uScale,uOff,uSun,uAlb,uSky,uSunC;uniform vec4 uCap,uCap2,uStem,uSkirt,uShell,uMisc,uColl;uniform float uSeed,uTime,uGlow,uHot,uDet,uSteps,uPix,uJit;
-varying vec3 vO;
+uniform vec3 uCamO,uScale,uOff,uSun,uAlb,uSky,uSunC;uniform vec4 uCap,uCap2,uStem,uSkirt,uShell,uMisc,uColl;uniform float uSeed,uTime,uGlow,uHot,uDet,uSteps,uPix,uJit;uniform sampler2D uDep;uniform vec4 uDP;uniform vec2 uCamNF;
+varying vec3 vO;varying float vVz;
 float h3(vec3 p){p=fract(p*.3183099+vec3(.71,.113,.419));p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
 float n3(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);return mix(mix(mix(h3(i),h3(i+vec3(1.,0.,0.)),f.x),mix(h3(i+vec3(0.,1.,0.)),h3(i+vec3(1.,1.,0.)),f.x),f.y),mix(mix(h3(i+vec3(0.,0.,1.)),h3(i+vec3(1.,0.,1.)),f.x),mix(h3(i+vec3(0.,1.,1.)),h3(i+vec3(1.,1.,1.)),f.x),f.y),f.z);}
 float gF=1e3,gS=1.,gD=0.;/* gF: finest noise frequency the ray step can resolve; gS: current noise scale */
@@ -10376,6 +10376,8 @@ void main(){
  vec3 bmin=uOff-uScale,bmax=uOff+uScale,ia=1./rd,t0=(bmin-ro)*ia,t1=(bmax-ro)*ia,tn=min(t0,t1),tf=max(t0,t1);
  float tN=max(max(tn.x,tn.y),max(tn.z,0.)),tF=min(min(tf.x,tf.y),tf.z);
  if(rd.y<0.)tF=min(tF,-ro.y/rd.y);
+ /* v215: stop at the first solid thing in front (terrain, mountains, bridges, models) */
+ if(uDP.z>.5){float dpz=texture2D(uDep,gl_FragCoord.xy/uDP.xy).x;if(dpz<.99999){float vz=uCamNF.x*uCamNF.y/(uCamNF.y*(1.-dpz)+dpz*uCamNF.x);tF=min(tF,length(P0-ro)*vz/max(vVz,1e-6));}}
  if(tF<=tN)discard;
  float dt=(tF-tN)/uSteps;gF=min(.6/max(dt,1e-4),.4/max(uPix,1e-5));gD=max(dt*1.3,uPix*1.5);float jt=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(.06711056,.00583715)))+uSeed*.618);float tt=tN+dt*(.5+(jt-.5)*uJit);
  float cs=dot(rd,uSun),ph=.25+.75*(1.-.09)/pow(1.+.09-.6*cs,1.5);
@@ -10423,16 +10425,20 @@ VXP.add=function(C,Wkg,o){try{
   blending:T.CustomBlending,blendEquation:T.AddEquation,blendSrc:T.OneFactor,blendDst:T.OneMinusSrcAlphaFactor,
   uniforms:{uCamO:{value:new T.Vector3()},uScale:{value:new T.Vector3(1,1,1)},uOff:{value:new T.Vector3()},uSun:{value:new T.Vector3(0,1,0)},uAlb:{value:new T.Vector3(...alb)},
    uSky:{value:new T.Vector3()},uSunC:{value:new T.Vector3()},uCap:{value:new T.Vector4()},uCap2:{value:new T.Vector4()},uStem:{value:new T.Vector4()},uSkirt:{value:new T.Vector4()},
-   uShell:{value:new T.Vector4()},uMisc:{value:new T.Vector4()},uColl:{value:new T.Vector4()},uSeed:{value:Math.random()*40},uTime:{value:0},uGlow:{value:1},uHot:{value:1},uDet:{value:1},uSteps:{value:STEP0},uPix:{value:0},uJit:{value:1}}});
- const mesh=new T.Mesh(geo,mat);mesh.frustumCulled=false;mesh.renderOrder=10;sc.add(mesh);
+   uShell:{value:new T.Vector4()},uMisc:{value:new T.Vector4()},uColl:{value:new T.Vector4()},uSeed:{value:Math.random()*40},uTime:{value:0},uGlow:{value:1},uHot:{value:1},uDet:{value:1},uSteps:{value:STEP0},uPix:{value:0},uJit:{value:1},uDep:{value:null},uDP:{value:new T.Vector4()},uCamNF:{value:new T.Vector2(.1,1e4)}}});
+ const mesh=new T.Mesh(geo,mat);mesh.frustumCulled=false;mesh.renderOrder=10;mesh.layers.set(1);sc.add(mesh);
  const humid=air&&S.body==='earth'&&(wet||(+S.wat||0)>.3||(U.stormK&&U.stormK.value>.1));
  const x={mesh,mat,C:Cg,Rk,Rm,W,t:0,tm,Tr,Hs,h0,air,wet,ground,life,cloudR:cloudKm*1000/Rm,T0:air?(W>1e6?6500:2900):9000,humid,
   wind:[0,0]};
  try{const th=U.owprm?U.owprm.value.x:0,uw=1.5+11*(+S.wat||0)+12*(U.stormK?U.stormK.value:0);x.wind=[Math.cos(th)*uw,Math.sin(th)*uw]}catch(e){}
  VXP.list.push(x);while(VXP.list.length>VXP.max)kill(VXP.list.shift());
  return true}catch(e){console.warn('[vxp] add',e);return false}};
+const _dbs=new T.Vector2();
 VXP.tick=function(dt){
- if(!VXP.list.length)return;
+ if(!VXP.list.length)return;try{OVL.t=performance.now()}catch(e){}
+ /* drawn in the overlay pass, after the scene: its depth tells each pixel where the first solid surface is */
+ let _dt=null;try{if(typeof rt!=='undefined'&&rt&&rt.depthTexture){_dt=rt.depthTexture;r.getDrawingBufferSize(_dbs)}}catch(e){}
+ for(const x of VXP.list){const u=x.mat.uniforms;u.uDep.value=_dt;u.uDP.value.set(_dbs.x||1,_dbs.y||1,_dt?1:0,0);u.uCamNF.value.set(cam.near,cam.far)}
  for(let i=VXP.list.length-1;i>=0;i--){const x=VXP.list[i];x.t+=Math.max(0,dt);if(x.t>x.life){kill(x);VXP.list.splice(i,1);continue}
   try{upd(x)}catch(e){console.warn('[vxp]',e);kill(x);VXP.list.splice(i,1)}}};
 function upd(x){
@@ -11252,7 +11258,7 @@ OPX.draw=(t,a)=>{
  TW.t.value=tS%1000;TW.up.value.copy(up);TW.k.value=air&&md('twk')?(md('twk')===2?1.2:.9)*Math.exp(-alt/12)*(earth||S.body==='venus'||S.body==='mars'?1:.5):0;
  // auto conditions
  const cov=(typeof FALL!=='undefined'&&FALL.cov>=0)?FALL.cov:-1,rain=Math.max((U.rainK&&U.rainK.value)||0,((U.stormK&&U.stormK.value)||0)*.8);
- const shower=cov<0?0:ss(.45,.8,cov)*(1-ss(.93,1,cov)),cirrus=cov<0?0:ss(.18,.5,cov),cold=Math.abs(la)>45*D2R||alt>3||(typeof S.doy==='number'&&(la>0?(S.doy<70||S.doy>320):(S.doy>150&&S.doy<250)));
+ const polar=Math.abs(la)>50*D2R,shower=(cov<0||polar)?0:ss(.5,.8,cov)*(1-ss(.9,1,cov))*.6,cirrus=cov<0?0:ss(.3,.65,cov)*.6,cold=Math.abs(la)>45*D2R||alt>3||(typeof S.doy==='number'&&(la>0?(S.doy<70||S.doy>320):(S.doy>150&&S.doy<250)));
  const u=U2;
  u.kRain.value=earth?pick('rain',Math.max(rain,shower))*(seD>-.5&&seD<42?1:0)*(alt<10?1:0):0;
  u.kHalo.value=air?pick('halo',cirrus*(alt<12?1:0)):0;
