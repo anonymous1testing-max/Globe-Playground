@@ -2503,7 +2503,7 @@ try{(function(){
  function mountLook(){
   if(xMounted.length||!isLive())return;
   const all=[...document.querySelectorAll('details')].filter(d=>!menuHost.contains(d));
-  XM_.forEach(([t,kind])=>{const d=all.find(q=>{const s=q.querySelector(':scope>summary');return s&&s.textContent.trim()===t});if(!d)return;
+  XM_.forEach(([t,kind])=>{const d=all.find(q=>{const s=q.querySelector(':scope>summary');if(!s)return false;const x=s.textContent.trim();return x===t||(x.endsWith(t)&&x.length-t.length<=4)});/* titles get an emoji icon at runtime */if(!d)return;
    const ph=document.createElement('span');ph.hidden=true;d.parentNode.insertBefore(ph,d);const was=d.open;d.open=false;d.classList.add('glb-xm');menuHost.appendChild(d);
    const fi=e=>lookChanged(kind,e),fc=e=>lookChanged(kind,e);d.addEventListener('input',fi,true);d.addEventListener('change',fc,true);xMounted.push({d,ph,was,fi,fc})})}
  function unmountLook(){xMounted.forEach(m=>{m.d.removeEventListener('input',m.fi,true);m.d.removeEventListener('change',m.fc,true);m.d.classList.remove('glb-xm');m.d.open=m.was;m.ph.parentNode.insertBefore(m.d,m.ph);m.ph.remove()});xMounted=[]}
