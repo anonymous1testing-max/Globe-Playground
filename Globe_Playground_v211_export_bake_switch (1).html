@@ -1147,7 +1147,7 @@ const SEAT="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAYFB
 function seaUni(){const v=U.seaP.value,q=U.seaQ.value;v.x=(tt.sea&&S.sea&&!moonTilesOn())?1:0;v.y=((+S.doy%365)+365)%365;v.z=Math.max(0,S.tilt/23.44);v.w=S.seaSn==null?1:S.seaSn;q.x=S.seaIc==null?1:S.seaIc;q.y=1;q.z=3;q.w=(S.seaV===0||S.seaV===false)?0:1+Math.max(0,Math.min(1,S.seaPt==null?.55:S.seaPt))}
 (function(){const im=new Image();im.onload=()=>{const t=new T.Texture(im);t.flipY=false;t.generateMipmaps=true;t.minFilter=T.LinearMipmapLinearFilter;t.magFilter=T.LinearFilter;t.anisotropy=Math.min(8,(typeof mx==='number'?mx:4));t.wrapS=t.wrapT=T.ClampToEdgeWrapping;t.needsUpdate=true;tt.sea=t;applyMoonTiles();apply(1)};setTimeout(()=>{im.src=SEAT},5200)})();
 [['m',0],['m2',1]].forEach(([k,i])=>{const im=new Image();im.onload=()=>{const t=new T.Texture(im);t.wrapS=t.wrapT=T.RepeatWrapping;t.minFilter=T.LinearMipmapLinearFilter;t.generateMipmaps=true;t.anisotropy=8;t.needsUpdate=true;tt[k]=t;const q=document.createElement('canvas');q.width=q.height=16;const x=q.getContext('2d');x.drawImage(im,0,0,16,16);const d=x.getImageData(0,0,16,16).data;let sm=0;for(let j=0;j<d.length;j+=4)sm+=.3*d[j]+.6*d[j+1]+.1*d[j+2];avM[i]=sm/256/255;applyMoonTiles();apply(1)};setTimeout(()=>{im.src=TILES[k]},4200+i*450)});
-const HF=`uniform vec4 gwA[6],gwB[6];uniform vec2 gwO;uniform float gwOn;
+const GWC=`uniform vec4 gwA[6],gwB[6];uniform vec2 gwO;uniform float gwOn;
 /* v219 perf: 6 Gerstner waves. gwA=(cycles E, cycles N per 4.096 km, amplitude km, steepness Q), gwB=(phase rad, wavelength km, k rad/km, -); gwB[0].w = summed amplitude km.
    fp<0: vertex mode, each wave fades by distance so the ring mesh can resolve it. fp>=0: pixel mode, only the part the mesh could not resolve (fades by pixel size). Shallow water shrinks and caps the waves. */
 vec4 gwave(vec2 en,float att,float dm,float fp,out vec2 D){vec4 o=vec4(0.);D=vec2(0.);if(gwOn<.5||att<=.001)return o;float r=max(abs(en.x),abs(en.y));vec2 p=en+gwO;
@@ -1155,7 +1155,8 @@ vec4 gwave(vec2 en,float att,float dm,float fp,out vec2 D){vec4 o=vec4(0.);D=vec
   float lm=Bq.y*1000.,a=min(A.z*smoothstep(.03,.35,dm/lm),.00012*dm)*f*att;if(a<=0.)continue;float ph=6.2831853*fract(dot(A.xy,p)/4.096)-Bq.x,cs=cos(ph),sn=sin(ph);vec2 dir=normalize(A.xy);
   o.x+=a*cs;o.yz-=a*Bq.z*dir*sn;D-=A.w*a*dir*sn;o.w+=A.w*Bq.z*a*cs;}
  return o;}
-uniform vec2 uv0,nb,og;uniform float humpK;uniform float R,cphi,sphi,mapW,lam0,cn0,nkx,hbk;uniform vec4 nbk;uniform vec2 volE[8];uniform vec4 volP[8],volQ[8];
+`;
+const HF=`uniform vec2 uv0,nb,og;uniform float humpK;uniform float R,cphi,sphi,mapW,lam0,cn0,nkx,hbk;uniform vec4 nbk;uniform vec2 volE[8];uniform vec4 volP[8],volQ[8];
 float h21(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
 float vn(vec2 p,float cnt){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);vec2 a=mod(i,cnt),b=mod(i+1.,cnt);return mix(mix(h21(a),h21(vec2(b.x,a.y)),f.x),mix(h21(vec2(a.x,b.y)),h21(b),f.x),f.y);}
 float impH(vec2 en){float h=0.;for(int i=0;i<8;i++){float ty=impB[i].y;if(ty<.5)continue;float age=impB[i].x,Rc=max(impB[i].z,.001),dep=impB[i].w,r=length(en-impE[i]);
@@ -1192,7 +1193,7 @@ float hF(vec2 en,float lod,float lamMin){
  for(int o=0;o<14;o++){if(lam<=lamMin||(hp>.5&&o>=2))break;float n=hn(o,lam,eg,sa,xa);if(bw>0.)n=mix(n,hn(o,lam,eg,sb,xb),bw);float fz=clamp(lam/lamMin-1.,0.,1.);sm+=a*fz*(mix(n,1.5*(1.-abs(2.*n-1.))*(1.-abs(2.*n-1.)),rg)-.5);/* v215: dune field on sand: rounded humps ~0.5-2.5 km across, tens of metres tall */if(sdK>0.)sm+=sdK*.1*bmS*min(lam,1.)*smoothstep(.3,.7,lam)*(1.-smoothstep(1.,2.5,lam))*fz*(n-.5);lam*=.5;a*=.52-.06*smK;}
  return impH(en)+volH(en)+clamp((1.-wm)*max(m*bmS+sm,0.),-.0018*R,.0018*R);}`;
 const GVS=`uniform sampler2D map,bm;uniform float hasB,bmS,lvS,lvI,h0k,h0L,h0w,alt;uniform vec2 hd,snp,snpC;varying vec3 vW,vN;varying vec2 vEN;varying vec2 vG;uniform vec4 impB[8];uniform vec2 impE[8];uniform sampler2D wsT;uniform float wsOn,wsN;uniform vec2 wsC,wsH;uniform sampler2D rsR;uniform vec4 rsP;uniform vec2 rsC,rsH;
-`+CL+HF+`
+`+CL+HF+GWC+`
 vec4 wsSv(vec2 q){vec2 f=q*wsN-.5,i=floor(f),a=f-i,t=vec2(1./wsN);return mix(mix(texture2D(wsT,(i+.5)*t),texture2D(wsT,(i+vec2(1.5,.5))*t),a.x),mix(texture2D(wsT,(i+vec2(.5,1.5))*t),texture2D(wsT,(i+1.5)*t),a.x),a.y);}
 float wsEtaV(vec2 en){if(wsOn<.5)return 0.;vec2 q=(en-wsC)/wsH;float m=max(abs(q.x),abs(q.y));if(m>=1.)return 0.;vec4 w=wsSv(q*.5+.5);if(w.g<=1e-5)return 0.;return max(w.r,-w.g)*(1.-smoothstep(.82,.98,m));}
 float rsEtaV(vec2 en){if(rsP.x<.5)return 0.;vec2 q=(en-rsC)/rsH;float m=max(abs(q.x),abs(q.y));if(m>=1.)return 0.;float lod=max(0.,log2(lvS*1000./max(rsP.z,1e-4))+.5);return textureLod(rsR,q*.5+.5,lod).r*.001*(1.-smoothstep(.8,.97,m))*rsP.w;}
@@ -1286,7 +1287,7 @@ uniform sampler2D rpT,rpS;uniform vec4 rpP;uniform mat3 rpSM;uniform vec4 rpMd;u
 /* v219 perf: sky probe = atmosphere + 3D/2D clouds + moon halo in the camera's local east/up/north frame (rows = sqrt(elevation)), refreshed a quarter at a time; stars come from the star map along the reflected ray */
 vec3 rpDec(vec3 D){return -.8*log(max(1.-pow(min(D,vec3(.995)),vec3(2.2)),1e-4));}
 vec3 rpSky(vec3 Rw,float ru,float lod){vec2 h=vec2(Rw.x*hd.x-Rw.z*hd.y,-Rw.x*hd.y-Rw.z*hd.x);vec4 p=textureLod(rpT,vec2(atan(h.x,h.y+1e-6)*.15915494+.5,sqrt(clamp(ru,0.,1.))),lod);vec3 D=p.rgb;if(rpP.y>.004&&p.a>.01){vec3 q=rpSM*Rw;D+=textureLod(rpS,vec2(fract(atan(q.z,q.x+1e-7)*.15915494),asin(clamp(q.y,-1.,1.))*.31830989+.5),rpP.z+lod*.5).rgb*rpP.y*p.a*3.;}return rpDec(D);}
-`+HF+`
+`+HF+GWC+`
 vec2 lgr(vec2 p,float c){float a=vn(p,c);return vec2(vn(p+vec2(.5,0.),c)-a,vn(p+vec2(0.,.5),c)-a)*2.;}
 /* cheap terrain shadows: 8 coarse steps toward the sun (the full shader uses up to 48) */
 float lsh(vec2 enF,float yF){vec2 sd=vec2(sun.x*hd.x-sun.z*hd.y,-sun.x*hd.y-sun.z*hd.x);float hz=length(sd);if(hz<1e-4)return 1.;if(sun.y<-.06)return 0.;sd/=hz;float te=max(sun.y,.0004)/hz,tau=.05,s=1.,hMx=min(.0018*R,bmS*1.7)+.5,mxD=clamp(max(hMx-yF,0.)/te,30.,300.),g2=pow(mxD/.05,1./7.);
@@ -4794,7 +4795,7 @@ function gpuGround(a,R){
  if(gp.ok===false)return null;
  try{
   if(gp.ok===null){
-   const fs='precision highp float;precision highp int;precision highp sampler2D;\n'+GVS.slice(0,GVS.lastIndexOf('void main'))+'uniform vec2 pEN[64];uniform float pLV[64];\nvoid main(){int i=int(gl_FragCoord.x);vec2 en=pEN[i];float lv=pLV[i];float lod=max(0.,log2(lv*mapW/(6.2831853*R*cphi)));float lm=max(2.*lv,.016);float h=hF(en,lod,lm);gl_FragColor=vec4(h,1.,0.,1.);}';
+   const fs='precision highp float;precision highp int;precision highp sampler2D;\n'+GVS.slice(0,GVS.lastIndexOf('void main')).replace(GWC,'')+'uniform vec2 pEN[64];uniform float pLV[64];\nvoid main(){int i=int(gl_FragCoord.x);vec2 en=pEN[i];float lv=pLV[i];float lod=max(0.,log2(lv*mapW/(6.2831853*R*cphi)));float lm=max(2.*lv,.016);float h=hF(en,lod,lm);gl_FragColor=vec4(h,1.,0.,1.);}';
    const vs='void main(){gl_Position=vec4(position.xy,0.,1.);}';
    const E0=[],L0=[];for(let i=0;i<64;i++){E0.push(new T.Vector2());L0.push(.004)}
    gp.mat=new T.ShaderMaterial({uniforms:Object.assign({},GU,U,{pEN:{value:E0},pLV:{value:L0}}),vertexShader:vs,fragmentShader:fs,depthTest:false,depthWrite:false});
