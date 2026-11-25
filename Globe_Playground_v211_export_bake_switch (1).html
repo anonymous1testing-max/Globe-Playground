@@ -1329,7 +1329,7 @@ void main(){
   vec2 wq=en+owoffL;float kS=1.-smoothstep(.35,1.1,fp*2.),kL=1.-smoothstep(.35,1.1,fp*.5),farW=smoothstep(.01,.1,fp);
   if(kS>.01)g+=lgr(wq*2.+vec2(t*.01,t*.006),512.)*.3*kS;
   if(kL>.01)g+=lgr(wq*.5+vec2(-t*.003,t*.002)+5.3,128.)*.22*kL;
-  float pat=vn(wq*.25+2.,64.)*.6+vn(wq+7.,256.)*.4,gx=mix(1.,mix(.08,1.,smoothstep(.3,.7,pat)),farW);
+  float pat=vn(wq*.25+2.,64.)*.6+vn(wq+7.,256.)*.4,gx=mix(1.,mix(.3,1.,smoothstep(.3,.7,pat)),farW);
   vec3 Nw=normalize(N-vec3(g.x*hd.x-g.y*hd.y,0.,-g.x*hd.y-g.y*hd.x)*.2*(1.-.6*clamp(lfm,0.,1.))+vec3(-(xg.x*owhd.x-xg.y*owhd.y),0.,xg.x*owhd.y+xg.y*owhd.x)*min(wm,1.));
   float nv=max(dot(Nw,V),0.),fr=.02+.98*pow(1.-nv,5.);
   vec3 Rf=reflect(-V,Nw);float ru=clamp(dot(Rf,up),0.,1.);
@@ -1339,7 +1339,7 @@ void main(){
   deep*=(.7+.75*max(dot(Nw,sun)*1.6-.45,0.)*day+.15*(1.-day))*.65;   /* ripples catch the light, so they read even looking straight down */
   vec3 wc=mix(deep,c*vec3(.45,.7,.8)*(.06+.94*day),(1.-smoothstep(.55,1.,wm))*.6);
   vec3 H=normalize(sun+V);float hn=max(dot(Nw,H),0.);
-  vec3 wcol=mix(wc,sky,min(fr*.95,.75))+sunC*(pow(hn,1400.*gx)*10.*gx+pow(hn,180.*gx)*.12)*smoothstep(-.02,.05,dot(N,sun));
+  vec3 wcol=mix(wc,sky,min(fr*.95,.75))+sunC*(pow(hn,1400.*gx)*10.*gx*gx*gx+pow(hn,180.*gx)*.12*gx)*smoothstep(-.02,.05,dot(N,sun));
   wcol=mix(wcol,vec3(.92,.96,1.)*(sunC*max(dot(Nw,sun)*.8+.2,0.)+skyC*.6),clamp(lfm,0.,1.)*.9);
   col=mix(col,wcol,clamp(wm*1.2,0.,1.));
  }
