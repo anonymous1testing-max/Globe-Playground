@@ -5061,7 +5061,7 @@ float cd0(vec3 p,float det,float lod){
    float an=tower>.01?smoothstep(.5,.75,cn)*smoothstep(.75,.92,c)*smoothstep(.79,.83,hO)*(1.-smoothstep(.88,.94,hO)):0.;
    float prof=max(max(profC,profS),an);
    if(prof>0.){
-    float dF=tex*smoothstep(.1,.8,c)*prof*mix(.55,1.5,cs);
+    float dF=tex*smoothstep(.1,.8,c)*prof*mix(.55,1.5,cs)*mix(.85*mix(.18,.97,smoothstep(.1,.95,c)),1.,smoothstep(.9,1.,c));/* v219: the far/coarse cloud level now has the same average coverage as the detailed cumulus cells (it was a solid sheet, so the sky looked like a clear hole around the camera inside a white wall) */
     if(lod<.02)d=dF;
     else{
      vec3 qw=q+vec3(ns3(q*.6+1.7),ns3(q*.6+5.3),0.)*.9*lod;
