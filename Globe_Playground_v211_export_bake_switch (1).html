@@ -2517,13 +2517,28 @@ try{(function(){
   let xmNt=null;if(E.xmas){c.extra.push('Christmas-tree night lights');if(hi){const W=Math.min(4096,Math.max(2048,c.w4||0)),cv=await makeXmas(c,W,xmWbl(c)),b=await new Promise(rs=>cv.toBlob(rs,'image/jpeg',.9));if(b)xmNt={u8:new Uint8Array(await b.arrayBuffer()),mime:'image/jpeg'};if(W>2048){cv.width=cv.height=1;delete c.xm[W]}}}/* v220: the preview swaps the light map in live; only the download bakes it */
   return buildGLB({img,mime,rm,nm:nmP,cl,nt:xmNt||ntP,es:xmNt?3.2:0,color:[.6,.6,.6],atm:A&&(hi&&!(E.atm>0)?null:A.atm),rim:A&&A.rim,rf:1-.75*E.gloss,ns:E.bump,co:E.cloud,ne:xmNt?1:E.night,name:c.name})}
  const glbInfo=(c,blob)=>mb(blob.size)+' · includes '+((c.parts||[]).concat(c.extra||[]).join(', ')||'plain colour');
- el('gbExp').onclick=async()=>{const n=pl.value,b0=el('gbExp');b0.disabled=true;gbI.textContent='Building the 3D globe…';
+ /* v222: crash recovery for the globe export. While an export, the editor or a download is running, its state is kept in localStorage.
+   If the app dies (phones run out of memory on full-quality downloads), the next start reopens the editor with the same edits and steps
+   texture sizes down one level (8k -> 4k -> 2k) so the retry fits. */
+  const GJ={get(){try{return JSON.parse(localStorage.getItem('ls3d_glbjob')||'null')}catch(e){return null}},set(o){try{localStorage.setItem('ls3d_glbjob',JSON.stringify(o))}catch(e){}},clr(){try{localStorage.removeItem('ls3d_glbjob')}catch(e){}},
+   lvl(){try{return Math.max(0,Math.min(2,+(localStorage.getItem('ls3d_glbsafe')||0)||0))}catch(e){return 0}},snap(ed){return ed?{E:ed.E,P:ed.ctx&&ed.ctx.P,L:ed.ctx&&ed.ctx.layers?ed.ctx.layers.map(l=>({on:l.on,op:l.op,col:l.col,dark:!!l.dark})):null}:{}}};window.__GJ=GJ;
+  setTimeout(()=>{const o=GJ.get();if(!o||!o.n)return;const b0=el('gbExp');if(!b0)return;
+   if(o.at==='download'||o.at==='export'){try{localStorage.setItem('ls3d_glbsafe',String(Math.min(2,GJ.lvl()+1)))}catch(e){}o.at='edit';GJ.set(o)}/* it died mid-build: go one size lighter */
+   const rb=document.createElement('button');rb.type='button';rb.id='gbResume';rb.className=b0.className;rb.style.marginLeft='6px';
+   rb.textContent='↩ Resume where I left off'+(GJ.lvl()?' (lighter, safer)':'');b0.insertAdjacentElement('afterend',rb);
+   const go=()=>{if(b0.disabled||!rb.isConnected)return;const r=GJ.get()||o;r.tries=(r.tries||0)+1;GJ.set(r);window.__glbResume=r;
+    if(pl.value!==r.n&&[...pl.options].some(x=>x.value===r.n)){pl.value=r.n;pl.dispatchEvent(new Event('change',{bubbles:true}))}rb.remove();b0.click()};
+   rb.onclick=go;
+   /* reopen by itself once, as soon as the planet's texture is back on the globe; never loop if that crashes too */
+   if((o.tries||0)<1){let k=0;const wt=()=>{const ready=(()=>{try{return o.n!==S.body||!!(bt&&bt.img)}catch(e){return true}})(),busy=(()=>{const c=document.getElementById('cp');return !!(c&&c.classList.contains('on'))})();
+    if(ready&&!busy)go();else if(++k<60)setTimeout(wt,1000)};setTimeout(wt,2500)}},1500);
+  el('gbExp').onclick=async()=>{const n=pl.value,b0=el('gbExp');b0.disabled=true;gbI.textContent='Building the 3D globe…';
   try{const src=await getBlob(n);let img=null,mime='',note='',nm=null,cl=null,nt=null,parts=[],layers=[],fb=null,rtype='',w4=0,h4=0,encW=0;
-   if(src){const r=await enc(src,Math.min(WL[+sw.value]||8192,8192),+sq.value,sf.value==='png'?'png':'jpeg');if(!r.blob)throw new Error('could not encode the texture');
+   if(src){const r=await enc(src,Math.min(WL[+sw.value]||8192,8192>>GJ.lvl()),+sq.value,sf.value==='png'?'png':'jpeg');if(!r.blob)throw new Error('could not encode the texture');
     fb=r.blob;
     if(n===S.body&&S.seam!==0&&S.seam!==false&&typeof seamFix==='function'){try{const bmS=await createImageBitmap(fb),cS=document.createElement('canvas');cS.width=bmS.width;cS.height=bmS.height;cS.getContext('2d').drawImage(bmS,0,0);if(bmS.close)bmS.close();seamFix(cS);const b2=await new Promise(rs=>cS.toBlob(rs,r.type,r.type==='image/png'?undefined:.92));if(b2)fb=b2;cS.width=cS.height=1}catch(e){}}
     mime=r.type;rtype=r.type;note=r.w+' × '+r.h+' px texture';parts.push('planet texture');
-    w4=Math.min(r.w,4096);h4=Math.max(2,Math.round(r.h*w4/r.w));encW=r.w;
+    w4=Math.min(r.w,4096>>GJ.lvl());h4=Math.max(2,Math.round(r.h*w4/r.w));encW=r.w;
     if(el('gbNt')&&el('gbNt').checked){try{gbI.textContent='Adding the night lights map…';const nb=await read('nt:'+n);if(nb){const rn=await enc(nb,w4,+sq.value,'jpeg');if(rn.blob){nt={u8:new Uint8Array(await rn.blob.arrayBuffer()),mime:rn.type};parts.push('night lights (night side only in Globe Playground)')}}else note+=' · no night lights map saved'}catch(e){console.warn('globe glb night',e)}}
     try{const nmv=await makeNormal(n,w4,h4);if(nmv){nm=nmv;parts.push('bump map')}}catch(e){console.warn('globe glb bump',e)}
     try{layers=await collectSpec(n);if(layers.length)parts.push('editable specular layers')}catch(e){console.warn('globe glb specular',e)}
@@ -2531,17 +2546,19 @@ try{(function(){
     if(!el('gbCl')||el('gbCl').checked){try{const cg=await makeClouds(n,w4,h4);if(cg){cl=cg.u8;parts.push(cg.n+' cloud layer'+(cg.n===1?'':'s'))}}catch(e){console.warn('globe glb clouds',e)}}}
    else note='no saved texture, plain colour';
    /* v216: bake the globe's look into the colour map at full size on download (capped by GPU and canvas limits) */
-   let bw=Math.min(encW||2048,8192,MT);while(bw>1024&&bw*bw/2>CA)bw/=2;bw=Math.max(1024,bw&~1023);
+   let bw=Math.min(encW||2048,8192>>GJ.lvl(),MT);while(bw>1024&&bw*bw/2>CA)bw/=2;bw=Math.max(1024,bw&~1023);
    const live=(n===S.body),spm=live?Math.max(0,Math.min(1,(S.spm==null?1:+S.spm)*(S.spopacity==null?1:+S.spopacity))):1,bd=B[n],hasAir=!!(bd&&bd[1]);
    if(el('gbAtm').checked&&!hasAir)note+=' · '+cap(n)+' has no atmosphere, so no shell';
    /* E = everything the preview editor can change; the file is rebuilt from it */
    const E={k:spm,glow:(el('gbSpec')&&el('gbSpec').checked)?spm:0,spcol:(live&&/^#[0-9a-f]{6}$/i.test(S.spcolor||''))?S.spcolor.toLowerCase():'#ffffff',gloss:0,bump:1,cloud:1,night:1,atm:(el('gbAtm').checked&&hasAir)?+el('gbAs').value/50:0};
    const ctx={n,name:cap(n),img,mime,type:rtype,fb,nm,cl,nt,layers,w4,h4,parts,hasAir,cache:new Map(),baseBm:null,extra:[],P:JSON.parse(JSON.stringify(S)),specV:0,/* v220: P = this export's own copy of the settings; the preview edits only P */
     live,look:!!(live&&src&&bt.img&&(!el('gbLook')||el('gbLook').checked)),bw,lookV:0,cloudV:0,wantCl:!!(src&&(!el('gbCl')||el('gbCl').checked))};
+   {const RS=window.__glbResume;window.__glbResume=null;if(RS&&RS.n===n){try{if(RS.E)Object.assign(E,RS.E,{lo:false});if(RS.P)ctx.P=RS.P;if(RS.L)RS.L.forEach((q,i)=>{const l=ctx.layers[i];if(l&&q){l.on=q.on;l.op=q.op;l.col=q.col;l.dark=!!q.dark}});ctx.lookV++;ctx.cloudV++}catch(e){}}
+    GJ.set(Object.assign({n,at:'export',tries:RS?(RS.tries||0):0},GJ.snap({E,ctx})))}
    gbI.textContent='Packing everything into one file…';await nextF();
    const blob=await glbFinish(ctx,E,false),fnm='planet_'+n+'_globe'+(E.atm>0?'_atmosphere':'')+'.glb';
    window.__pendingGlobeGLB={blob,filename:fnm,info:glbInfo(ctx,blob)};
-   showGlbPreview(blob,fnm,{ctx,E,fns:{finish:glbFinish,atm:glbAtmosphere,info:glbInfo,collect:collectSpec,clouds:makeClouds,spec:composeSpec,xmas:makeXmas,xmWbl}});gbI.textContent='Preview ready: '+fnm+'. Switch on Edit in the preview to adjust specular layers, atmosphere and more, then download when ready.'
+   showGlbPreview(blob,fnm,{ctx,E,fns:{finish:glbFinish,atm:glbAtmosphere,info:glbInfo,collect:collectSpec,clouds:makeClouds,spec:composeSpec,xmas:makeXmas,xmWbl}});{const o=GJ.get();if(o){o.at='edit';GJ.set(o)}}gbI.textContent=(GJ.lvl()?'Safer mode after a crash: textures capped at '+(8192>>GJ.lvl())+' px. ':'')+'Preview ready: '+fnm+'. Switch on Edit in the preview to adjust specular layers, atmosphere and more, then download when ready.'
   }catch(e){gbI.textContent='3D export failed: '+(e&&e.message||e)}b0.disabled=false};
  wTxt();gTxt();
  const ds=document.querySelector('details.data-settings');if(ds)ds.addEventListener('toggle',()=>{if(ds.open)scan()});
@@ -2720,7 +2737,7 @@ try{(function(){
  function cloneMenu(d,kind,off){const c=d.cloneNode(true);
   const oc=d.querySelectorAll('canvas'),cc=c.querySelectorAll('canvas');cc.forEach((k,i)=>{const s=oc[i];try{if(s&&s.width&&s.height){k.width=s.width;k.height=s.height;k.getContext('2d').drawImage(s,0,0)}}catch(e){}});/* thumbnails */
   c.open=false;c.classList.add('glb-xm');c.dataset.kind=kind;
-  [c,...c.querySelectorAll('[id]')].forEach(e=>{if(!e.id)return;e.dataset.gid=e.id;e.removeAttribute('id')});/* never duplicate a globe id */
+  [c,...c.querySelectorAll('[id]')].forEach(e=>{if(!e.id)return;e.dataset.gid=e.id;e.removeAttribute('id')});{const PP=ed&&ed.ctx&&ed.ctx.P;if(PP&&typeof S!=='undefined')c.querySelectorAll('input[data-gid],select[data-gid]').forEach(e=>{const k=e.dataset.gid;if(!(k in PP)||e.type==='file')return;const v=PP[k];if(v==null||typeof v==='object'||JSON.stringify(v)===JSON.stringify(S[k]))return;if(e.type==='checkbox')e.checked=!!v;else e.value=String(v);try{e.dispatchEvent(new Event('input',{bubbles:true}))}catch(_){}})}/* v222: show this export's own (restored) values, not the globe's *//* never duplicate a globe id */
   c.querySelectorAll('label[for]').forEach(l=>l.removeAttribute('for'));c.querySelectorAll('input[type=file]').forEach(e=>e.remove());
   c.querySelectorAll('input[type=color]').forEach(inp=>{const sw=inp.previousElementSibling;if(sw&&sw.classList.contains('cpk-sw'))sw.remove();const host=inp.closest('.spec-layer-row')||inp.closest('label')||inp.parentElement,bx=host&&host.nextElementSibling;if(bx&&bx.classList.contains('cpk')&&!bx.querySelector('[data-gid]'))bx.remove();inp.style.display=''});/* the copied picker is dead; rebuilt after mounting */
   const rx=LIVEK[kind];
@@ -2847,7 +2864,7 @@ try{(function(){
  function resize(){if(!renderer||!camera)return;const w=Math.max(1,canvas.clientWidth),h=Math.max(1,canvas.clientHeight);renderer.setSize(w,h,false);camera.aspect=w/h;
   /* v216: frame the whole globe + glow on tall phone screens too (was cropped to the middle of the planet) */
   const v=camera.fov*Math.PI/360,hz=Math.atan(Math.tan(v)*camera.aspect);camera.position.set(0,0,1.16/Math.sin(Math.min(v,hz))/zoomK);camera.updateProjectionMatrix()}
- function close(){window.__glbPause=0;clearTimeout(fullT);thrStop();unmountMenu();sess++;zoomK=1;try{if(BLK.tex){BLK.tex.dispose();BLK.tex=null;BLK.img=null}}catch(_){}root.classList.remove('on');root.setAttribute('aria-hidden','true');disposePreview();freeEd();ed=null;pending=null;lookEl.innerHTML='';
+ function close(){window.__glbPause=0;clearTimeout(fullT);thrStop();unmountMenu();sess++;zoomK=1;try{if(BLK.tex){BLK.tex.dispose();BLK.tex=null;BLK.img=null}}catch(_){}try{window.__GJ&&window.__GJ.clr()}catch(_){}root.classList.remove('on');root.setAttribute('aria-hidden','true');disposePreview();freeEd();ed=null;pending=null;lookEl.innerHTML='';
   /* v220: the globe was never touched, so nothing has to be put back: it just runs again. Saving stays blocked one more second so the
      delayed autosave a preview slider may have started cannot fire as a write. */
   window.__glbPause=0;clearTimeout(sbT);sbT=setTimeout(()=>{window.__glbSB=0},1200)}
@@ -2862,6 +2879,7 @@ try{(function(){
  canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
  canvas.addEventListener('wheel',e=>{if(!model)return;e.preventDefault();zoomTo(zoomK*(e.deltaY<0?1.12:1/1.12))},{passive:false});
  $('glbPreviewClose').onclick=close;
+ $('glbEdit').addEventListener('change',()=>{const J=window.__GJ;if(!J||!ed)return;const o=J.get();if(o)J.set(Object.assign(o,J.snap(ed)))});/* v222: keep edits for crash recovery */
  /* v220: view buttons, usable without Edit */
  $('glbNightBtn').onclick=()=>{nightOn=!nightOn;const b=$('glbNightBtn');b.textContent=nightOn?'☀️ Day side':'🌙 Night side';b.setAttribute('aria-pressed',String(nightOn))};
  $('glbXmasBtn').onclick=()=>{if(!ed)return;const E=ed.E;E.xmas=!E.xmas;$('glbXmasBtn').setAttribute('aria-pressed',String(!!E.xmas));if(E.xmas&&!nightOn)$('glbNightBtn').onclick();applyLive()};
@@ -2869,7 +2887,9 @@ try{(function(){
  $('glbPreviewDownload').onclick=async()=>{
   if(!pending)return;const b=$('glbPreviewDownload'),t=b.textContent;b.disabled=true;b.textContent='Building full quality…';
   try{let blob=pending.blob,info=window.__pendingGlobeGLB&&window.__pendingGlobeGLB.info||'';
+   const GJ=window.__GJ;if(GJ){const o=GJ.get()||{};GJ.set(Object.assign(o,{at:'download'},GJ.snap(ed)))}
    if(ed){blob=await ed.fns.finish(ed.ctx,ed.E,true);info=ed.fns.info(ed.ctx,blob)}
+   if(GJ){const o=GJ.get();if(o){o.at='edit';GJ.set(o)}}
    const a=document.createElement('a'),u=URL.createObjectURL(blob);a.href=u;a.download=pending.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),30000);
    $('gbInfo').textContent='Downloaded '+pending.name+' · '+info}
   catch(e){$('gbInfo').textContent='Download failed: '+(e&&e.message||e)}
