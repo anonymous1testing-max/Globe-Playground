@@ -1088,16 +1088,20 @@ vec3 seaGround(vec3 c,vec3 s,float wm,vec2 Tt,float dist){
  return mix(c,tl,tw*.92*tvf);}
 `;
 const PV=`uniform sampler2D map,bm;uniform float hasB,bmS,R,uBl,uIc,isE,pRing;varying vec3 vP,vW;void main(){vec3 d=normalize(position);vec2 u=vec2(atan(-d.z,d.x)/6.2831853+.5,asin(clamp(d.y,-1.,1.))/3.14159265+.5);vec3 col=texture2D(map,u).rgb;float mn=min(col.r,min(col.g,col.b)),ice=smoothstep(uIc-.04,uIc,mn)*(1.-smoothstep(.07,.11,max(col.r,max(col.g,col.b))-mn));float blue=col.b-max(col.r,col.g),ratio=col.b/max(max(col.r,col.g),.004)-uBl,darkOcean=smoothstep(.015,.08,blue)*smoothstep(.22,.04,dot(col,vec3(.3,.6,.1)));float water=isE*max(smoothstep(0.,.045,ratio),darkOcean)*(1.-ice);float h=hasB>.5?texture2D(bm,u).r:.5;float disp=hasB>.5?(1.-water)*clamp((h-.5)*bmS*.0004,-.0018,.0018):0.;/* v215: under the detailed terrain rings this coarse sphere (triangles ~200 km wide) stays flat and just below sea level, so its raised plateaus can no longer hang over valleys as a see-through sheet */if(pRing>0.){float dc=length((modelMatrix*vec4(position,1.)).xyz-cameraPosition),k=smoothstep(pRing*.75,pRing,dc);disp=mix(-.00008,disp,k);}vec3 pp=position+d*disp;vP=pp;vW=(modelMatrix*vec4(pp,1.)).xyz;gl_Position=projectionMatrix*viewMatrix*vec4(vW,1.);}`;
-const P=new T.Mesh(new T.SphereGeometry(1,192,96),new T.ShaderMaterial({transparent:true,depthWrite:true,opacity:1,uniforms:Object.assign({map:{value:null},nt:{value:null},hasN:{value:0},specMap:{value:ph},hasSpec:{value:0},specMapF:{value:ph},hasSpecF:{value:0},lyFade:{value:1},spm:{value:1},spopacity:{value:1},spfade:{value:.55},edgeStrength:{value:.35},specColor:{value:new T.Color(1,1,1)},edgeColor:{value:new T.Color(.75,.91,1)},R:{value:6371},fsS:{value:16},pRingSk:{value:0}},U),extensions:{derivatives:true},vertexShader:PV,fragmentShader:COM+SEAG+`uniform sampler2D map,nt;uniform float hasN,R,lhz;uniform vec3 uReliefAx;varying vec3 vP,vW;varying vec2 vUv;
+const P=new T.Mesh(new T.SphereGeometry(1,192,96),new T.ShaderMaterial({transparent:true,depthWrite:true,opacity:1,uniforms:Object.assign({mapT:{value:(()=>{const t=new T.DataTexture2DArray(new Uint8Array([128,128,128,255]),1,1,1);t.needsUpdate=true;return t})()},hasMT:{value:0},mtG:{value:new T.Vector2(1,1)},map:{value:null},nt:{value:null},hasN:{value:0},specMap:{value:ph},hasSpec:{value:0},specMapF:{value:ph},hasSpecF:{value:0},lyFade:{value:1},spm:{value:1},spopacity:{value:1},spfade:{value:.55},edgeStrength:{value:.35},specColor:{value:new T.Color(1,1,1)},edgeColor:{value:new T.Color(.75,.91,1)},R:{value:6371},fsS:{value:16},pRingSk:{value:0}},U),extensions:{derivatives:true},vertexShader:PV,fragmentShader:COM+SEAG+`uniform sampler2D map,nt;
+uniform highp sampler2DArray mapT;uniform float hasMT;uniform vec2 mtG;
+/* v224: ultra planet texture = 8 tiles (4 across, 2 down) in one texture array, so a 32k x 16k map fits under the 8k / 16k texture limit */
+vec4 mapX(vec2 u){if(hasMT<.5)return texture2D(map,u);vec2 g=vec2(4.,2.),q=vec2(fract(u.x),clamp(1.-u.y,0.,.99999))*g,c=floor(min(q,g-.00001)),dx=dFdx(u)*g,dy=dFdy(u)*g;if(abs(dx.x)>1.)dx.x=0.;if(abs(dy.x)>1.)dy.x=0.;
+ return textureGrad(mapT,vec3(q-c,c.x+4.*c.y),vec2(dx.x,-dx.y),vec2(dy.x,-dy.y));}uniform float hasN,R,lhz;uniform vec3 uReliefAx;varying vec3 vP,vW;varying vec2 vUv;
 uniform float fsS;uniform float asharp;uniform float pRingSk;
 float ghH(vec2 u){return clamp((texture2D(bm,u).r-.5)*2.,0.,1.);}
 /* v195 soft normal map: height comes from the relief map, or from the albedo luminance when there is none, and the gradient is read at two widths so the normals stay smooth instead of pixel-sharp */
-float ghL(vec2 u){return hasB>.5?ghH(u):dot(texture2D(map,u).rgb,vec3(.3,.6,.1));}
+float ghL(vec2 u){return hasB>.5?ghH(u):dot(mapX(u).rgb,vec3(.3,.6,.1));}
 vec2 ghG(vec2 u,vec2 e){float a=ghL(u+vec2(-e.x,e.y)),b=ghL(u+vec2(0.,e.y)),c=ghL(u+e),d=ghL(u-vec2(e.x,0.)),f=ghL(u+vec2(e.x,0.)),g=ghL(u-e),h=ghL(u-vec2(0.,e.y)),i=ghL(u+vec2(e.x,-e.y));return vec2(((c+2.*f+i)-(a+2.*d+g))/(8.*e.x),((a+2.*b+c)-(g+2.*h+i))/(8.*e.y));}
 float ghN(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);float a=fract(sin(dot(i,vec2(127.1,311.7)))*43758.5453),b=fract(sin(dot(i+vec2(1.,0.),vec2(127.1,311.7)))*43758.5453),c=fract(sin(dot(i+vec2(0.,1.),vec2(127.1,311.7)))*43758.5453),e=fract(sin(dot(i+vec2(1.,1.),vec2(127.1,311.7)))*43758.5453);return mix(mix(a,b,f.x),mix(c,e,f.x),f.y);}
 /* auto-correction for blurry areas: unsharp mask + micro grain, strength follows how magnified the map is on screen */
-vec3 aSharp(vec2 u){vec3 c0=texture2D(map,u).rgb;if(asharp<.01)return c0;vec2 ts=vec2(textureSize(map,0)),fw=fwidth(u)*ts;float mag=1./max(max(fw.x,fw.y),1e-4);
- float am=asharp*(.1+.5*clamp((mag-1.)*.3,0.,1.));vec2 e=1./ts;vec3 bl=(texture2D(map,u+vec2(e.x,0.)).rgb+texture2D(map,u-vec2(e.x,0.)).rgb+texture2D(map,u+vec2(0.,e.y)).rgb+texture2D(map,u-vec2(0.,e.y)).rgb)*.25;
+vec3 aSharp(vec2 u){vec3 c0=mapX(u).rgb;if(asharp<.01)return c0;vec2 ts=(hasMT>.5?mtG:vec2(textureSize(map,0))),fw=fwidth(u)*ts;float mag=1./max(max(fw.x,fw.y),1e-4);
+ float am=asharp*(.1+.5*clamp((mag-1.)*.3,0.,1.));vec2 e=1./ts;vec3 bl=(mapX(u+vec2(e.x,0.)).rgb+mapX(u-vec2(e.x,0.)).rgb+mapX(u+vec2(0.,e.y)).rgb+mapX(u-vec2(0.,e.y)).rgb)*.25;
  vec3 sh=c0+(c0-bl)*am*2.;float mg=clamp(log2(max(mag,1.))/3.,0.,1.);float nz=ghN(u*ts*.6)-.5+(ghN(u*ts*1.7)-.5)*.5;sh*=1.+nz*.07*mg*asharp;return clamp(sh,0.,1.);}
 float fsH(vec3 q,float lod){vec2 u=vec2(atan(-q.z,q.x)/6.2831853+.5,asin(clamp(q.y,-1.,1.))/3.14159265+.5);return clamp((textureLod(bm,u,lod).r-.5)*2.,0.,1.)*bmS;}
 float fsShadow(vec3 d,float wmk){
@@ -11758,5 +11762,53 @@ try{(function(){
  }
  run();setTimeout(run,1500);setTimeout(run,5000); /* re-run: some sections (Sky optics) are built after startup */
 })()}catch(e){}
+</script>
+<script id="ultra-texture-v224">
+/* v224: Ultra planet texture. Maps wider than 8k are normally squeezed into one texture (8k on most devices). With this on, the map is cut
+   into 8 tiles (4 across, 2 down) stored in one texture array, so a 32k x 16k map shows at full detail. Bigger maps (e.g. 49k) are shrunk to 32k.
+   Tiles are cut one at a time from the decoded image, so only one 8k tile is in a canvas at once. Phones and low-memory devices get 4k tiles. */
+try{(function(){
+ const MTX={src:null,busy:false,glt:null,tex:null};
+ const info=t=>{const e=document.getElementById('mt8info');if(e)e.textContent=t};
+ const BASE='For huge maps (wider than 8k, up to 32k × 16k; bigger ones such as 49k are shrunk to 32k). The map is cut into 8 tiles, 4 across and 2 down, so it fits under the graphics card’s per-texture limit. Full size needs about 2.7 GB of graphics memory (desktop GPU); phones get 8 tiles of 4k.';
+ const resetSt=()=>{try{r.resetState()}catch(e){try{r.state.reset()}catch(_){}}};
+ function ui(){if(document.getElementById('mt8'))return true;const sm=[...document.querySelectorAll('#pb summary')].find(x=>/Textures/.test(x.textContent));if(!sm)return false;
+  const L=document.createElement('label');L.className='fade-switch';L.innerHTML='<input type=checkbox id=mt8><span>Ultra planet texture: 8 tiles of 8k (up to 32k × 16k)</span>';
+  const H=document.createElement('p');H.className='hint';H.id='mt8info';H.textContent=BASE;sm.after(L);L.after(H);
+  const c=L.querySelector('input');c.checked=!!S.mt8;c.onchange=()=>{S.mt8=c.checked?1:0;try{sv()}catch(e){}MTX.src=null;if(!S.mt8)info(BASE);tick()};return true}
+ function drop(){try{P.material.uniforms.hasMT.value=0}catch(e){}if(MTX.tex){try{r.properties.remove(MTX.tex)}catch(e){}MTX.tex=null}if(MTX.glt){try{r.getContext().deleteTexture(MTX.glt)}catch(e){}MTX.glt=null}}
+ async function build(img){MTX.busy=true;let t=null,src=null;
+  try{info('Reading your full-size map…');let b=null;try{b=await dbop('get',S.body)}catch(e){}if(!(b instanceof Blob))throw new Error('the original upload was not found; upload the map again');
+   try{src=await createImageBitmap(b)}catch(e){src=null}
+   if(!src||src.width>32768){try{if(src)src.close()}catch(_){}src=await createImageBitmap(b,{resizeWidth:32768,resizeHeight:16384,resizeQuality:'high'})}/* 49k and up: shrink to 32k */
+   if(bt.img!==img||!S.mt8)throw 'stale';
+   if(src.width<=8192){info('Your map is '+src.width+' px wide, so the normal texture already shows it at full detail. '+BASE);src.close();src=null;MTX.busy=false;return}
+   const W0=src.width;
+   const gl=r.getContext(),W=src.width,H=src.height,mem=navigator.deviceMemory||8,co=matchMedia('(pointer:coarse)').matches;
+   let cap=Math.min(8192,MT);if(co||mem<8)cap=Math.min(cap,4096);
+   const TW=Math.min(cap,Math.ceil(W/4)),TH=Math.min(cap,Math.ceil(H/2)),lv=Math.floor(Math.log2(Math.max(TW,TH)))+1;
+   drop();t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D_ARRAY,t);gl.texStorage3D(gl.TEXTURE_2D_ARRAY,lv,gl.RGBA8,TW,TH,8);resetSt();
+   const cv=document.createElement('canvas');cv.width=TW;cv.height=TH;const x=cv.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';
+   for(let i=0;i<8;i++){if(bt.img!==img||!S.mt8)throw 'stale';info('Building the ultra texture: tile '+(i+1)+' of 8 ('+TW+' × '+TH+')…');
+    const cx=i%4,cy=i>>2;x.clearRect(0,0,TW,TH);x.drawImage(src,cx*W/4,cy*H/2,W/4,H/2,0,0,TW,TH);
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY,t);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);gl.pixelStorei(gl.UNPACK_ALIGNMENT,4);
+    gl.texSubImage3D(gl.TEXTURE_2D_ARRAY,0,0,0,i,TW,TH,1,gl.RGBA,gl.UNSIGNED_BYTE,cv);resetSt();await new Promise(rs=>setTimeout(rs,30))}
+   cv.width=cv.height=1;try{src.close()}catch(_){}src=null;
+   gl.bindTexture(gl.TEXTURE_2D_ARRAY,t);gl.generateMipmap(gl.TEXTURE_2D_ARRAY);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+   gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+   const ax=gl.getExtension('EXT_texture_filter_anisotropic');if(ax)gl.texParameterf(gl.TEXTURE_2D_ARRAY,ax.TEXTURE_MAX_ANISOTROPY_EXT,Math.min(8,gl.getParameter(ax.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));resetSt();
+   const err=gl.getError();if(err&&err!==gl.CONTEXT_LOST_WEBGL)throw new Error('GL error '+err);
+   /* hand the finished GL texture to three.js: version 0 = never upload, just bind */
+   const tex=new T.DataTexture2DArray(null,TW,TH,8);tex.version=0;const pr=r.properties.get(tex);pr.__webglTexture=t;pr.__webglInit=true;
+   MTX.glt=t;MTX.tex=tex;t=null;const u=P.material.uniforms;u.mapT.value=tex;u.mtG.value.set(TW*4,TH*2);u.hasMT.value=1;
+   info('Ultra texture on: 8 tiles of '+TW+' × '+TH+' = '+(TW*4)+' × '+(TH*2)+' px'+(W0>TW*4?' (your '+W0+' px map was shrunk to fit)':'')+'. '+BASE)}
+  catch(e){try{if(src)src.close()}catch(_){}if(t){try{r.getContext().deleteTexture(t)}catch(_){}}drop();if(e!=='stale')info('Ultra texture could not be built ('+(e&&e.message||e)+'), so the normal texture is used. '+BASE)}
+  MTX.busy=false}
+ function tick(){if(!ui()||MTX.busy)return;let img=null;try{img=bt&&bt.img}catch(e){}
+  const gl2=(()=>{try{return r.capabilities.isWebGL2}catch(e){return false}})();
+  if(!S.mt8||!img||!gl2||img.width<1024){if(MTX.tex)drop();return}
+  if(MTX.src===img)return;MTX.src=img;build(img)}
+ setInterval(tick,1500);
+})()}catch(e){console.warn('ultra texture',e)}
 </script>
 </body></html>
