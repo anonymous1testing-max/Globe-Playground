@@ -11742,4 +11742,21 @@ OPX.draw=(t,a)=>{
  const ac=r.autoClear;r.autoClear=false;r.setRenderTarget(null);r.render(scn,OC);r.autoClear=ac;};
 }catch(e){console.warn('optics',e)}})();
 </script>
+<script id="layout-v223">
+/* ---------- menu layout tidy-up: move a few misplaced controls into the section they belong to (moves existing nodes; ids and handlers stay) ---------- */
+try{(function(){
+ const $=id=>document.getElementById(id);
+ const row=e=>e&&(e.closest('label')||e.closest('.r'));
+ const secBySummary=re=>{const s=[...document.querySelectorAll('#pb > details > summary')].find(x=>re.test(x.textContent));return s?s.parentElement:null};
+ function run(){
+  /* 1. "Water waves" (S.wat) is the wind speed that drives the ocean wave model, not a surface shader setting: Surface -> Ocean physics, first slider */
+  try{const w=row($('wat')),d=row($('wdir'));if(w&&d&&d.parentNode&&!w.closest('details')?.contains(d)){const h=d.previousElementSibling,at=h&&h.matches('p.hint')&&/Water waves/.test(h.textContent)?h:d;at.parentNode.insertBefore(w,at)}}catch(e){} /* the Ocean intro hint says "Water waves above sets the wind strength", so it goes just above that hint */
+  /* 2. "Tile view distance" (+ its hint, which is about the ground tile blocks) sits in Landscape & fog: -> Ground tile blocks */
+  try{const t=row($('tvd')),box=$('ntBox');if(t&&box&&!box.contains(t)){const h=t.nextElementSibling;box.appendChild(t);if(h&&h.matches('p.hint')&&/ground tile blocks/i.test(h.textContent))box.appendChild(h)}}catch(e){}
+  /* 3. Sky optics (rainbows, halos, aurora...) gets appended after Settings & data at the bottom of the menu: put it with the other sky/sun look sections, right after Sun flare & red halo */
+  try{const o=$('opxbox'),f=secBySummary(/sun flare/i);if(o&&f&&f.parentNode===o.parentNode&&f.nextElementSibling!==o)f.after(o)}catch(e){}
+ }
+ run();setTimeout(run,1500);setTimeout(run,5000); /* re-run: some sections (Sky optics) are built after startup */
+})()}catch(e){}
+</script>
 </body></html>
