@@ -198,7 +198,7 @@ canvas{touch-action:none!important}
 .glbPreviewPanel button{background:#1b3458;color:#fff;border:1px solid #5b80ad;border-radius:9px;padding:10px 13px;font:inherit}
 #glbPreviewStage{position:relative;flex:1;min-height:220px;background:radial-gradient(ellipse at center,#142b4b,#030811 70%);touch-action:none}
 #glbPreviewCanvas{display:block;width:100%;height:100%;touch-action:none}
-#glbPreviewLoading{position:absolute;inset:0;display:grid;place-items:center;color:#c6e3ff;pointer-events:none}
+#glbPreviewLoading{position:absolute;inset:0;display:grid;place-items:center;color:#c6e3ff;pointer-events:none}#glbViewBar{position:absolute;left:8px;bottom:8px;display:flex;gap:6px;flex-wrap:wrap;z-index:2}#glbViewBar button{font:600 12px system-ui,sans-serif;color:#e8f3ff;background:rgba(10,24,44,.78);border:1px solid rgba(150,200,255,.35);border-radius:999px;padding:6px 11px;cursor:pointer}#glbViewBar button[aria-pressed="true"]{background:rgba(255,190,60,.28);border-color:#ffd36b;color:#fff3c8}
 .glbPreviewPanel footer{border-top:1px solid #345;border-bottom:0;justify-content:space-between}
 #glbPreviewDownload{background:#17623b;border-color:#5ad18a;font-weight:700}
 @media(max-width:600px){.quickCleanBtns{gap:5px}.glbPreviewPanel{height:92dvh}.glbPreviewPanel footer button{flex:1;padding:10px 6px;font-size:12px}}
@@ -470,7 +470,7 @@ canvas{touch-action:none!important}
 <div id="glbPreview" aria-hidden="true">
  <div class="glbPreviewPanel" role="dialog" aria-modal="true" aria-labelledby="glbPreviewTitle">
   <header><div><b id="glbPreviewTitle">🌍 Globe export preview</b><small id="glbPreviewInfo">Drag to rotate · switch on Edit to tweak specular layers, atmosphere and more without exporting</small></div><label class="ge-sw"><input type="checkbox" id="glbEditOn"><span>✏️ Edit</span></label><button type="button" id="glbPreviewClose" aria-label="Close preview">✕</button></header>
-  <div id="glbPreviewStage"><canvas id="glbPreviewCanvas"></canvas><div id="glbPreviewLoading">Preparing 3D preview…</div></div>
+  <div id="glbPreviewStage"><canvas id="glbPreviewCanvas"></canvas><div id="glbPreviewLoading">Preparing 3D preview…</div><div id="glbViewBar"><button type="button" id="glbNightBtn" aria-pressed="false">🌙 Night side</button><button type="button" id="glbXmasBtn" aria-pressed="false" title="Night side glows like a Christmas tree">🎄 Christmas lights</button></div></div>
   <div id="glbEdit"><div id="glbEditMenu"></div><div id="glbEditLook"></div></div>
   <footer><button type="button" id="glbPreviewAgain">Rebuild preview</button><button type="button" id="glbPreviewDownload">⬇ Download .glb</button></footer>
  </div>
@@ -2161,7 +2161,7 @@ async function bakeLook0(W,o){
   u.xmicro.value=surf?1:0;u.xkt.value=10*Math.max(1,Math.round(W/4000))/W;u.on.value.set(surf?1:0,surf?1:0,1,1);u.hasCx.value=0;u.cx.value=null;u.ss.value=o.ss||(W<=2048?2:1);
   u.xex.value=Math.max(2.5,Math.min(12,1.2*6.283185307*B[S.body][0]/W));u.xsf.value=surf?1:0;u.xd.value.set(DW,DH);
   for(let y=0;y<H;y+=DH){for(let x=0;x<W;x+=DW){u.xo.value.set(x,y);if(surf){U.sun.value.copy(sunB);if(U.hasShad)U.hasShad.value=0}
-    try{r.setRenderTarget(rtx);r.render(XS,XC);r.readRenderTargetPixels(rtx,0,0,DW,DH,buf)}finally{r.setRenderTarget(null);if(surf){U.sun.value.copy(sunS);if(U.hasShad)U.hasShad.value=shS}}
+    /* v220: o.pre() puts the GLB preview's own settings into the shared uniforms for THIS tile only and returns their restore; both run in the same task, so the globe never renders with them */const rsw=o.pre?o.pre():null;try{r.setRenderTarget(rtx);r.render(XS,XC);r.readRenderTargetPixels(rtx,0,0,DW,DH,buf)}finally{r.setRenderTarget(null);if(surf){U.sun.value.copy(sunS);if(U.hasShad)U.hasShad.value=shS}if(rsw)rsw()}
     id.data.set(buf);ox.putImageData(id,x,y)}
    if(o.yield!==false)await nf()}
  }finally{rtx.dispose();u.xmicro.value=0;u.xsf.value=0;u.hasCx.value=0}
@@ -2346,6 +2346,7 @@ try{(function(){
   if(o.nm)pm.normalTexture={index:addTex(o.nm,'image/png'),scale:o.ns==null?1:o.ns};
   if(o.nt){pm.emissiveTexture={index:addTex(o.nt.u8,o.nt.mime)};pm.emissiveFactor=[o.ne==null?1:o.ne,o.ne==null?1:o.ne,o.ne==null?1:o.ne]}
   if(o.rim){pm.extensions={KHR_materials_sheen:{sheenColorFactor:o.rim.c,sheenRoughnessFactor:o.rim.r}};ext('KHR_materials_sheen')}
+  if(o.es&&o.nt){pm.extensions=Object.assign(pm.extensions||{},{KHR_materials_emissive_strength:{emissiveStrength:o.es}});ext('KHR_materials_emissive_strength')}/* v220: Christmas lights glow brighter than glTF's 0..1 emissive allows */
   J.materials.push(pm);J.meshes.push({name:o.name,primitives:[prim(0)]});
   const kids=[];J.nodes.push({name:o.name,mesh:0,children:kids});
   if(o.atm){
@@ -2379,25 +2380,27 @@ try{(function(){
  /* specular layers are collected once so the preview can edit each one (on/off, opacity, colour) without re-reading any file */
  async function collectSpec(n){
   const live=(n===S.body),li=live&&typeof layerInfo==='function'?layerInfo():[],out=[];
-  for(let i=0;i<MAX_SPEC_LAYERS;i++){const m=li[i];if(m&&m.dark)continue;const b=await layerBlob(n,i);if(!b)continue;
-   out.push({i,b,name:(m&&m.name)||('Layer '+(i+1)),op:m?m.opacity:1,col:/^#[0-9a-f]{6}$/i.test((m&&m.color)||'')?m.color.toLowerCase():'#ffffff',on:true});await nextF()}
+  /* v220: Darken-mode layers are collected too (flagged dark) so the preview can switch them; they never go into the gloss map */
+  for(let i=0;i<MAX_SPEC_LAYERS;i++){const m=li[i];const b=await layerBlob(n,i);if(!b)continue;
+   out.push({i,b,name:(m&&m.name)||('Layer '+(i+1)),op:m?m.opacity:1,col:/^#[0-9a-f]{6}$/i.test((m&&m.color)||'')?m.color.toLowerCase():'#ffffff',on:true,dark:!!(m&&m.dark)});await nextF()}
   return out}
  /* every enabled layer, stacked additively exactly like the live globe, becomes one gloss map (white = shiny, black = matte) + one coloured glow canvas */
- async function composeSpec(L,w,h,k,cache){
+ async function composeSpec(L,w,h,k,cache,raw){/* v220: raw = return the canvases (live preview), no PNG */
   const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d',{willReadFrequently:true});x.fillStyle='#000';x.fillRect(0,0,w,h);x.globalCompositeOperation='lighter';
   const cc=document.createElement('canvas');cc.width=w;cc.height=h;const cx2=cc.getContext('2d');cx2.fillStyle='#000';cx2.fillRect(0,0,w,h);cx2.globalCompositeOperation='lighter';
   const tc=document.createElement('canvas');tc.width=w;tc.height=h;const tx2=tc.getContext('2d');let used=0;
-  for(const l of L){if(!l.on||l.op<=.001)continue;
-   try{gbI.textContent='Adding specular layer '+(l.i+1)+'…';const ck=l.i+'|'+w;let bm=cache&&cache.get(ck);if(!bm){bm=await createImageBitmap(l.b,{resizeWidth:w,resizeHeight:h,resizeQuality:'high'});if(cache)cache.set(ck,bm)}
+  for(const l of L){if(!l.on||l.dark||l.op<=.001)continue;
+   try{if(!raw)gbI.textContent='Adding specular layer '+(l.i+1)+'…';const ck=l.i+'|'+w;let bm=cache&&cache.get(ck);if(!bm){bm=await createImageBitmap(l.b,{resizeWidth:w,resizeHeight:h,resizeQuality:'high'});if(cache)cache.set(ck,bm)}
     x.globalAlpha=l.op;x.drawImage(bm,0,0,w,h);
     let sr=bm;if(l.col!=='#ffffff'){tx2.globalCompositeOperation='source-over';tx2.globalAlpha=1;tx2.clearRect(0,0,w,h);tx2.drawImage(bm,0,0,w,h);tx2.globalCompositeOperation='multiply';tx2.fillStyle=l.col;tx2.fillRect(0,0,w,h);tx2.globalCompositeOperation='destination-in';tx2.drawImage(bm,0,0,w,h);sr=tc}
     cx2.globalAlpha=l.op;cx2.drawImage(sr,0,0,w,h);if(!cache&&bm.close)bm.close();used++}catch(e){}
-   await nextF()}
+   if(!raw)await nextF()}
   tc.width=tc.height=1;
   if(!used){c.width=c.height=1;cc.width=cc.height=1;return null}
   const im=x.getImageData(0,0,w,h),d=im.data;
   for(let p=0;p<d.length;p+=4){const Lq=Math.min(1,Math.max(d[p],d[p+1],d[p+2])/255*k);d[p]=255;d[p+1]=Math.round((.95-.85*Lq)*255);d[p+2]=0;d[p+3]=255}
   x.globalCompositeOperation='source-over';x.globalAlpha=1;x.putImageData(im,0,0);
+  if(raw)return{c,n:used,cc};
   const blob=await toPng(c);c.width=c.height=1;return blob?{u8:new Uint8Array(await blob.arrayBuffer()),n:used,cc}:null}
  /* the height / bump map becomes a tangent-space normal map, scaled by the Bump map strength slider */
  async function makeNormal(n,w,h){
@@ -2412,49 +2415,81 @@ try{(function(){
    if(y%128===127)await nextF()}
   x.putImageData(out,0,0);const blob=await toPng(c);c.width=c.height=1;return blob?new Uint8Array(await blob.arrayBuffer()):null}
  /* every uploaded cloud layer, stacked like the live globe, becomes one transparent cloud shell */
- async function makeClouds(n,w,h,keep){
-  const live=(n===S.body),acc=new Float32Array(w*h).fill(1);let used=0;
+ async function makeClouds(n,w,h,keep,Pq,cache){
+  /* v220: Pq = the GLB preview's own settings (default: the globe's own); cache keeps each layer's coverage, so a live edit only re-mixes */
+  const live=(n===S.body),SS=Pq||S,acc=new Float32Array(w*h).fill(1);let used=0;
   const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d',{willReadFrequently:true});
-  for(let i=0;i<CLOUD_N;i++){const op=live&&S.cop&&S.cop[i]!=null?+S.cop[i]:1;if(op<=.001)continue;
+  for(let i=0;i<CLOUD_N;i++){const op=live&&SS.cop&&SS.cop[i]!=null?+SS.cop[i]:1;if(op<=.001)continue;
+   const ck=cache&&('l'+i+'|'+w+'|'+h),cv=ck&&cache.get(ck);if(cv){for(let q=0;q<acc.length;q++)acc[q]*=1-Math.min(1,cv[q]/255*op);used++;continue}
    /* v216: the live slot texture first, so generated and weather-sim clouds export exactly as shown */
    let lim=null;try{const tx=live&&typeof cloudTex!=='undefined'&&cloudTex[i];if(tx&&tx.image&&(tx.image.width||tx.image.videoWidth))lim=tx.image}catch(e){}
    let b=null;if(!lim){b=live&&typeof cloudFiles!=='undefined'&&cloudFiles[i]||null;if(!(b instanceof Blob))b=await read(i?'c:'+n+':'+i:'c:'+n);
    if(!(b instanceof Blob)||!b.size||/^video\//.test(b.type))continue}
    let al=false;try{al=!!(live&&typeof cloudMeshes!=='undefined'&&cloudMeshes[i]&&cloudMeshes[i].material.uniforms.calpha.value>.5)}catch(e){}
-   try{gbI.textContent='Adding cloud layer '+(i+1)+'…';x.clearRect(0,0,w,h);if(lim){x.imageSmoothingQuality='high';x.drawImage(lim,0,0,w,h)}else{const bm=await createImageBitmap(b,{resizeWidth:w,resizeHeight:h,resizeQuality:'high'});x.drawImage(bm,0,0,w,h);if(bm.close)bm.close()}
-    const d=x.getImageData(0,0,w,h).data;for(let p=0,q=0;q<acc.length;p+=4,q++){const v=al?d[p+3]/255:(d[p]*.3+d[p+1]*.6+d[p+2]*.1)/255;acc[q]*=1-Math.min(1,v*op)}used++}catch(e){}
-   await nextF()}
-  if(!used&&live&&n==='earth'&&S.cdef&&S.cvol&&window.__CLDMAP){try{gbI.textContent='Adding the Earth cloud map…';const im=new Image();im.src=window.__CLDMAP;await im.decode();x.clearRect(0,0,w,h);x.imageSmoothingQuality='high';x.drawImage(im,0,0,w,h);
-   const d=x.getImageData(0,0,w,h).data;for(let p=0,q=0;q<acc.length;p+=4,q++)acc[q]=1-Math.min(1,(d[p]*.3+d[p+1]*.6+d[p+2]*.1)/255*1.15);used=1}catch(e){console.warn('globe glb default clouds',e)}}
+   try{if(!cache)gbI.textContent='Adding cloud layer '+(i+1)+'…';x.clearRect(0,0,w,h);if(lim){x.imageSmoothingQuality='high';x.drawImage(lim,0,0,w,h)}else{const bm=await createImageBitmap(b,{resizeWidth:w,resizeHeight:h,resizeQuality:'high'});x.drawImage(bm,0,0,w,h);if(bm.close)bm.close()}
+    const d=x.getImageData(0,0,w,h).data,cv2=ck?new Uint8Array(acc.length):null;for(let p=0,q=0;q<acc.length;p+=4,q++){const v=al?d[p+3]/255:(d[p]*.3+d[p+1]*.6+d[p+2]*.1)/255;if(cv2)cv2[q]=Math.round(Math.min(1,v)*255);acc[q]*=1-Math.min(1,v*op)}if(cv2)cache.set(ck,cv2);used++}catch(e){}
+   if(!cache)await nextF()}
+  if(!used&&live&&n==='earth'&&SS.cdef&&SS.cvol&&window.__CLDMAP){try{const dk=cache&&('def|'+w+'|'+h),dv=dk&&cache.get(dk);if(dv){for(let q=0;q<acc.length;q++)acc[q]=1-dv[q]/255}else{gbI.textContent='Adding the Earth cloud map…';const im=new Image();im.src=window.__CLDMAP;await im.decode();x.clearRect(0,0,w,h);x.imageSmoothingQuality='high';x.drawImage(im,0,0,w,h);
+   const d=x.getImageData(0,0,w,h).data,dv2=dk?new Uint8Array(acc.length):null;for(let p=0,q=0;q<acc.length;p+=4,q++){acc[q]=1-Math.min(1,(d[p]*.3+d[p+1]*.6+d[p+2]*.1)/255*1.15);if(dv2)dv2[q]=Math.round((1-acc[q])*255)}if(dv2)cache.set(dk,dv2)}used=1}catch(e){console.warn('globe glb default clouds',e)}}
   if(!used){c.width=c.height=1;return null}
-  const col=(live&&/^#[0-9a-f]{6}$/i.test(S.ccolor||''))?S.ccolor:'#ffffff',cr=parseInt(col.slice(1,3),16),cg=parseInt(col.slice(3,5),16),cb=parseInt(col.slice(5,7),16),im=x.createImageData(w,h),o=im.data;
+  const col=(live&&/^#[0-9a-f]{6}$/i.test(SS.ccolor||''))?SS.ccolor:'#ffffff',cr=parseInt(col.slice(1,3),16),cg=parseInt(col.slice(3,5),16),cb=parseInt(col.slice(5,7),16),im=x.createImageData(w,h),o=im.data;
   for(let q=0,p=0;q<acc.length;q++,p+=4){o[p]=cr;o[p+1]=cg;o[p+2]=cb;o[p+3]=Math.round((1-acc[q])*255)}
   x.putImageData(im,0,0);if(keep)return{canvas:c,n:used};const blob=await toPng(c);c.width=c.height=1;return blob?{u8:new Uint8Array(await blob.arrayBuffer()),n:used}:null}
  /* Rayleigh glow profile for strength sl (1 = slider centre); used for the file and for live preview opacity */
- function glbAtmosphere(n,sl){
-  const bd=B[n];if(!(bd&&bd[1])||!(sl>0))return null;
+ function glbAtmosphere(n,sl,Pq){
+  /* v220: Pq = the GLB preview's own settings. Besides Scatter intensity, the Atmosphere menu's Air density, Atmospheric glow, Atmosphere height, Glow reach and Haze now shape the halo too (at their default values it is exactly as before) */
+  const bd=B[n];if(!(bd&&bd[1])||!(sl>0))return null;const P=Pq||S,rt=(v,d,lo,hi)=>Math.max(lo,Math.min(hi,v==null||!isFinite(+v)?1:+v/d));
   const sc=bd[1],mx=Math.max(sc[0],sc[1],sc[2],1e-3),col=sc.map(v=>Math.min(1,.12+.88*Math.sqrt(v/mx))),
-   ks=sl*Math.max(.35,Math.min(1.6,(S.ai==null?1.6:+S.ai)/1.6)),
-   Hh=Math.max(bd[2]/bd[0]*4,.035),N=14,Amax=Math.min(.92,.72*ks),Hs=Hh*.34,
+   ks=sl*Math.max(.35,Math.min(1.6,(P.ai==null?1.6:+P.ai)/1.6))*Math.sqrt(rt(P.ad,1,.3,2.5))*rt(P.gl,1,0,3),
+   Hh=Math.max(bd[2]/bd[0]*4,.035)*rt(P.ah,1,.5,3),N=14,Amax=Math.min(.92,.72*ks),Hs=Hh*.34*rt(P.gs,1,.3,2.5),
    Tf=r=>Amax*Math.exp(-(r-1)/Hs),rad=i=>1+Hh*(i+1)/N,C=new Array(N+1).fill(0);
   for(let i=0;i<N;i++){const lo=i?rad(i-1):1;C[i]=Tf((lo+rad(i))/2)}
   const halo=[];for(let i=N-1;i>=0;i--){const a=1-(1-C[i])/(1-C[i+1]),u=i/(N-1),wh=.55*(1-u);halo.push({r:rad(i),a:Math.max(0,Math.min(.95,a)),c:col.map(v=>Math.min(1,v+(1-v)*wh))})}
-  const ec=/^#[0-9a-f]{6}$/i.test(S.edgeColor||'')?S.edgeColor:'#bfe9ff',es=Math.min(1,Math.max(0,+(S.edgeStrength==null?.35:S.edgeStrength))*1.7);
-  return{atm:{halo,veil:ks>.02?{r:1+Hh*.12,a:Math.min(.3,.06*ks),c:col}:null},rim:es>.01?{c:[1,3,5].map(q=>Math.round(parseInt(ec.slice(q,q+2),16)/255*es*1000)/1000),r:.4}:null}}
+  const ec=/^#[0-9a-f]{6}$/i.test(P.edgeColor||'')?P.edgeColor:'#bfe9ff',es=Math.min(1,Math.max(0,+(P.edgeStrength==null?.35:P.edgeStrength))*1.7);
+  return{atm:{halo,veil:ks>.02?{r:1+Hh*.12,a:Math.min(.3,.06*ks*rt(P.az,1.5,0,3.4)),c:col}:null},rim:es>.01?{c:[1,3,5].map(q=>Math.round(parseInt(ec.slice(q,q+2),16)/255*es*1000)/1000),r:.4}:null}}
  /* Builds the GLB from the collected pieces and the current edits E. hi=false makes a lighter preview (2048 px specular/glow work), hi=true the full-quality download. */
+ /* v220: "Christmas tree" night glow. Strings coloured bulbs densely along every coastline and sparsely over land (water found with the
+    globe's own water test and S.wbl), adds a soft glow, and keeps any real night-lights map on top. Cached per width on the export context. */
+ const xmWbl=c=>{const v=c&&c.P&&c.P.wbl;return v!=null&&isFinite(+v)?+v:((typeof S!=='undefined'&&S&&S.wbl!=null&&isFinite(+S.wbl))?+S.wbl:1.05)};
+ async function makeXmas(c,W,wbl){
+  c.xm=c.xm||{};if(c.xm[W])return c.xm[W];
+  const H=Math.max(2,W>>1),cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d',{willReadFrequently:true});
+  let land=null;const src=c.fb||(c.img?new Blob([c.img],{type:c.mime||'image/jpeg'}):null);
+  if(src){try{const bm=await createImageBitmap(src,{resizeWidth:W,resizeHeight:H,resizeQuality:'high'});x.drawImage(bm,0,0);if(bm.close)bm.close();const d=x.getImageData(0,0,W,H).data;land=new Uint8Array(W*H);
+   for(let q=0,p=0;q<land.length;q++,p+=4){const r=d[p],g=d[p+1],b=d[p+2],mx=Math.max(r,g),ratio=b/Math.max(mx,4)-wbl,blue=b-mx,lum=(.3*r+.6*g+.1*b)/255,
+    dark=Math.max(0,Math.min(1,(blue-3.8)/16.6))*Math.max(0,Math.min(1,(.22-lum)/.18));land[q]=(Math.max(Math.max(0,Math.min(1,ratio/.045)),dark)>.35)?0:1}}catch(e){land=null}}
+  if(!land)land=new Uint8Array(W*H).fill(1);
+  const im=x.createImageData(W,H),o=im.data;for(let p=3;p<o.length;p+=4)o[p]=255;
+  const sp=Math.max(3,Math.round(W/700)),PAL=[[1,.06,.04],[.1,1,.2],[1,.72,.12],[.15,.45,1],[1,.9,.7],[1,.2,.75]];
+  const L=(xx,yy)=>land[Math.min(H-1,Math.max(0,yy))*W+((xx%W)+W)%W];
+  let seed=1234567;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+  const put=(xx,yy,col,k)=>{if(yy<0||yy>=H)return;const i=(yy*W+((xx%W)+W)%W)*4;o[i]+=col[0]*k*255;o[i+1]+=col[1]*k*255;o[i+2]+=col[2]*k*255};
+  for(let gy=0;gy<H;gy+=sp){const lat=Math.cos((gy/H-.5)*Math.PI),step=Math.max(1,Math.round(1/Math.max(lat,.05)));
+   for(let gx=0,n=0;gx<W;gx+=sp,n++){if(n%step)continue;const px=gx+Math.floor(rnd()*sp),py=gy+Math.floor(rnd()*sp);if(py>=H||!L(px,py))continue;
+    const coast=!L(px+sp,py)||!L(px-sp,py)||!L(px,py+sp)||!L(px,py-sp)||!L(px+2*sp,py)||!L(px-2*sp,py)||!L(px,py+2*sp)||!L(px,py-2*sp);
+    if(rnd()>(coast?.95:.3))continue;const col=PAL[Math.floor(rnd()*PAL.length)],k=coast?1:.85;
+    put(px,py,col,k);put(px+1,py,col,.45*k);put(px-1,py,col,.45*k);put(px,py+1,col,.45*k);put(px,py-1,col,.45*k);
+    put(px+1,py+1,col,.18*k);put(px-1,py+1,col,.18*k);put(px+1,py-1,col,.18*k);put(px-1,py-1,col,.18*k)}}
+  x.putImageData(im,0,0);
+  const gw=Math.max(8,W>>4),gh=Math.max(4,H>>4),g=document.createElement('canvas');g.width=gw;g.height=gh;const gx2=g.getContext('2d');gx2.imageSmoothingEnabled=true;gx2.imageSmoothingQuality='high';gx2.drawImage(cv,0,0,gw,gh);
+  gx2.globalCompositeOperation='lighter';for(let i=0;i<3;i++)gx2.drawImage(g,0,0);
+  x.globalCompositeOperation='lighter';x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.globalAlpha=.9;x.drawImage(g,0,0,W,H);
+  if(c.nt&&c.nt.u8){try{const nb=await createImageBitmap(new Blob([c.nt.u8],{type:c.nt.mime||'image/jpeg'}),{resizeWidth:W,resizeHeight:H,resizeQuality:'high'});x.globalAlpha=1;for(let i=0;i<2;i++)x.drawImage(nb,0,0,W,H);if(nb.close)nb.close()}catch(e){}}
+  x.globalCompositeOperation='source-over';x.globalAlpha=1;g.width=g.height=1;
+  c.xm[W]=cv;return cv}
  async function glbFinish(c,E,hi){
   /* v216: three resolution levels: E.lo (while a slider moves) = 512 px, preview = 2048 px, download (hi) = full */
   const lo=!hi&&!!E.lo,pw=hi?c.w4:Math.min(c.w4,lo?512:2048),ph=c.w4?Math.max(2,Math.round(c.h4*pw/c.w4)):0;c.extra=[];
   let img=c.img,mime=c.mime,rm=null,base=c.fb,btype=c.type;
   if(c.look&&typeof bakeLook==='function'){const W=hi?c.bw:(lo?512:2048);c.bk=c.bk||{};let e=c.bk[W];
-   if(!e||e.v!==c.lookV){gbI.textContent='Baking the globe look ('+W+' px)…';const cv=await bakeLook(W,{surf:1});
-    if(cv){const bl=await new Promise(rs=>cv.toBlob(rs,'image/jpeg',.92));cv.width=cv.height=1;if(bl){e={v:c.lookV,blob:bl,u8:new Uint8Array(await bl.arrayBuffer())};if(!hi)c.bk[W]=e}}}
+   if(!e||e.v!==c.lookV){gbI.textContent='Baking the globe look ('+W+' px)…';if(c.prep)await c.prep(W);const v0=c.lookV,cv=await bakeLook(W,{surf:1,pre:c.pre});/* v220: c.pre = the preview's settings, swapped in per tile */
+    if(cv){const bl=await new Promise(rs=>cv.toBlob(rs,'image/jpeg',.92));cv.width=cv.height=1;if(bl){e={v:v0,blob:bl,u8:new Uint8Array(await bl.arrayBuffer())};if(!hi)c.bk[W]=e}}}
    if(e){img=e.u8;mime='image/jpeg';base=e.blob;btype='image/jpeg';c.extra.push('the globe look baked in ('+(hi?W+' px, ':'')+'colour grading, ocean, relief)')}}
   /* v216: the preview never uploads textures bigger than it needs (phones could not show 8k previews at all) */
   const shrink=async(key,u8,mt,W)=>{if(!u8||hi)return u8;c.ps=c.ps||{};const k=key+W;if(c.ps[k]&&c.ps[k].src===u8)return c.ps[k].u8;try{const bm=await createImageBitmap(new Blob([u8],{type:mt}));if(bm.width<=W){bm.close&&bm.close();return u8}const cv=document.createElement('canvas');cv.width=W;cv.height=Math.max(2,Math.round(bm.height*W/bm.width));const q=cv.getContext('2d');q.imageSmoothingQuality='high';q.drawImage(bm,0,0,cv.width,cv.height);bm.close&&bm.close();const b=await new Promise(rs=>cv.toBlob(rs,mt==='image/png'?'image/png':'image/jpeg',.9));cv.width=cv.height=1;const o=b?new Uint8Array(await b.arrayBuffer()):u8;c.ps[k]={src:u8,u8:o};return o}catch(e){return u8}};
   const PW=lo?1024:2048;img=await shrink('img',img,mime,PW);const nmP=await shrink('nm',c.nm,'image/png',PW),ntP=c.nt?{u8:await shrink('nt',c.nt.u8,c.nt.mime,PW),mime:c.nt.mime}:null;
-  let cl=c.cl;if(c.wantCl&&!hi){const CW=lo?1024:2048;c.clc=c.clc||{};if(!(CW in c.clc)||c.clc[CW].v!==c.cloudV){const q=await makeClouds(c.n,CW,CW/2);c.clc[CW]={v:c.cloudV,u8:q&&q.u8}}cl=c.clc[CW].u8}
-  else if(c.wantCl&&hi&&c.cloudV){const q=await makeClouds(c.n,c.w4,c.h4);cl=q&&q.u8}
+  let cl=c.cl;if(c.wantCl&&!hi){const CW=lo?1024:2048;c.clc=c.clc||{};if(!(CW in c.clc)||c.clc[CW].v!==c.cloudV){const v0=c.cloudV,q=await makeClouds(c.n,CW,CW/2,false,c.P);c.clc[CW]={v:v0,u8:q&&q.u8}}cl=c.clc[CW].u8}
+  else if(c.wantCl&&hi&&c.cloudV){const q=await makeClouds(c.n,c.w4,c.h4,false,c.P);cl=q&&q.u8}
   if(c.layers&&c.layers.length&&c.w4){
    const g=await composeSpec(c.layers,pw,ph,E.k,hi?null:c.cache);/* cache is keyed by layer and size */
    if(g){rm=g.u8;c.extra.push(g.n+' specular layer'+(g.n===1?'':'s')+' (gloss map)');
@@ -2468,9 +2503,10 @@ try{(function(){
      if(b3){img=new Uint8Array(await b3.arrayBuffer());mime=btype;c.extra.push('specular glow baked into colour')}}
     g.cc.width=g.cc.height=1}}
   /* the preview always carries the glow shells (hidden at 0) so the slider can bring them back live */
-  const A=c.hasAir?glbAtmosphere(c.n,hi?E.atm:Math.max(E.atm,.5)):null;
+  const A=c.hasAir?glbAtmosphere(c.n,hi?E.atm:Math.max(E.atm,.5),c.P):null;
   if(A&&(hi?E.atm>0:true)&&E.atm>0)c.extra.push('Rayleigh atmosphere glow'+(A.rim?' and rim light':''));
-  return buildGLB({img,mime,rm,nm:nmP,cl,nt:ntP,color:[.6,.6,.6],atm:A&&(hi&&!(E.atm>0)?null:A.atm),rim:A&&A.rim,rf:1-.75*E.gloss,ns:E.bump,co:E.cloud,ne:E.night,name:c.name})}
+  let xmNt=null;if(E.xmas){c.extra.push('Christmas-tree night lights');if(hi){const W=Math.min(4096,Math.max(2048,c.w4||0)),cv=await makeXmas(c,W,xmWbl(c)),b=await new Promise(rs=>cv.toBlob(rs,'image/jpeg',.9));if(b)xmNt={u8:new Uint8Array(await b.arrayBuffer()),mime:'image/jpeg'};if(W>2048){cv.width=cv.height=1;delete c.xm[W]}}}/* v220: the preview swaps the light map in live; only the download bakes it */
+  return buildGLB({img,mime,rm,nm:nmP,cl,nt:xmNt||ntP,es:xmNt?3.2:0,color:[.6,.6,.6],atm:A&&(hi&&!(E.atm>0)?null:A.atm),rim:A&&A.rim,rf:1-.75*E.gloss,ns:E.bump,co:E.cloud,ne:xmNt?1:E.night,name:c.name})}
  const glbInfo=(c,blob)=>mb(blob.size)+' · includes '+((c.parts||[]).concat(c.extra||[]).join(', ')||'plain colour');
  el('gbExp').onclick=async()=>{const n=pl.value,b0=el('gbExp');b0.disabled=true;gbI.textContent='Building the 3D globe…';
   try{const src=await getBlob(n);let img=null,mime='',note='',nm=null,cl=null,nt=null,parts=[],layers=[],fb=null,rtype='',w4=0,h4=0,encW=0;
@@ -2491,12 +2527,12 @@ try{(function(){
    if(el('gbAtm').checked&&!hasAir)note+=' · '+cap(n)+' has no atmosphere, so no shell';
    /* E = everything the preview editor can change; the file is rebuilt from it */
    const E={k:spm,glow:(el('gbSpec')&&el('gbSpec').checked)?spm:0,spcol:(live&&/^#[0-9a-f]{6}$/i.test(S.spcolor||''))?S.spcolor.toLowerCase():'#ffffff',gloss:0,bump:1,cloud:1,night:1,atm:(el('gbAtm').checked&&hasAir)?+el('gbAs').value/50:0};
-   const ctx={n,name:cap(n),img,mime,type:rtype,fb,nm,cl,nt,layers,w4,h4,parts,hasAir,cache:new Map(),baseBm:null,extra:[],
+   const ctx={n,name:cap(n),img,mime,type:rtype,fb,nm,cl,nt,layers,w4,h4,parts,hasAir,cache:new Map(),baseBm:null,extra:[],P:JSON.parse(JSON.stringify(S)),specV:0,/* v220: P = this export's own copy of the settings; the preview edits only P */
     live,look:!!(live&&src&&bt.img&&(!el('gbLook')||el('gbLook').checked)),bw,lookV:0,cloudV:0,wantCl:!!(src&&(!el('gbCl')||el('gbCl').checked))};
    gbI.textContent='Packing everything into one file…';await nextF();
    const blob=await glbFinish(ctx,E,false),fnm='planet_'+n+'_globe'+(E.atm>0?'_atmosphere':'')+'.glb';
    window.__pendingGlobeGLB={blob,filename:fnm,info:glbInfo(ctx,blob)};
-   showGlbPreview(blob,fnm,{ctx,E,fns:{finish:glbFinish,atm:glbAtmosphere,info:glbInfo,collect:collectSpec,clouds:makeClouds}});gbI.textContent='Preview ready: '+fnm+'. Switch on Edit in the preview to adjust specular layers, atmosphere and more, then download when ready.'
+   showGlbPreview(blob,fnm,{ctx,E,fns:{finish:glbFinish,atm:glbAtmosphere,info:glbInfo,collect:collectSpec,clouds:makeClouds,spec:composeSpec,xmas:makeXmas,xmWbl}});gbI.textContent='Preview ready: '+fnm+'. Switch on Edit in the preview to adjust specular layers, atmosphere and more, then download when ready.'
   }catch(e){gbI.textContent='3D export failed: '+(e&&e.message||e)}b0.disabled=false};
  wTxt();gTxt();
  const ds=document.querySelector('details.data-settings');if(ds)ds.addEventListener('toggle',()=>{if(ds.open)scan()});
@@ -2511,31 +2547,43 @@ try{(function(){
  let renderer=null,scene=null,camera=null,model=null,raf=0,drag=null,pending=null,ed=null,rebuildT=0,building=false,again=false,againLo=false,zoomK=1;
  const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}},lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
  function disposeObj(o){o.traverse(m=>{if(m.geometry)m.geometry.dispose();const ms=m.material?(Array.isArray(m.material)?m.material:[m.material]):[];ms.forEach(mt=>{['map','normalMap','roughnessMap','metalnessMap','emissiveMap','alphaMap'].forEach(k=>{try{if(mt[k]&&mt[k].dispose)mt[k].dispose()}catch(e){}});try{if(mt.dispose)mt.dispose()}catch(e){}})})}
- function freeEd(){if(ed&&ed.ctx){ed.ctx.cache.forEach(b=>{try{b.close()}catch(e){}});ed.ctx.cache.clear();if(ed.ctx.baseBm){try{ed.ctx.baseBm.close()}catch(e){}ed.ctx.baseBm=null}}}
+ function freeEd(){if(ed&&ed.xmTex){try{ed.xmTex.dispose()}catch(e){}ed.xmTex=null}if(ed&&ed.ctx&&ed.ctx.xm){for(const k in ed.ctx.xm){try{ed.ctx.xm[k].width=1}catch(e){}}ed.ctx.xm=null}if(ed&&ed.ctx){const c=ed.ctx;c.cache.forEach(b=>{try{b.close()}catch(e){}});c.cache.clear();if(c.baseBm){try{c.baseBm.close()}catch(e){}c.baseBm=null}if(c.clLive)c.clLive.clear();if(ed.gmT&&ed.gmT.tex){try{ed.gmT.tex.dispose()}catch(e){}ed.gmT=null}}try{freeLV()}catch(e){}}
  function disposePreview(){
   if(raf)cancelAnimationFrame(raf);raf=0;
   if(model&&scene){scene.remove(model);disposeObj(model)}
-  if(renderer){renderer.dispose();renderer.forceContextLoss();renderer=null}
+  if(scene)scene.traverse(o=>{try{if(o.geometry)o.geometry.dispose();if(o.material&&o.material.dispose)o.material.dispose()}catch(e){}});
+  if(renderer){try{renderer.renderLists.dispose();renderer.setSize(1,1,false)}catch(e){}}/* v220: keep the context, free its buffers */
   model=null;scene=null;camera=null;
  }
  /* Make the preview shade like the real globe: reuse the exact day/night, specular and atmosphere shader patches the globe itself applies to globe GLBs.
     The sun is fixed relative to the camera (the globe turns under it), and can be swung with the Sun slider. */
  const SUNV={value:new T.Vector3(0,0,1)};let sunDeg=+(lsGet('ls3d_glbsun')||35);if(!isFinite(sunDeg))sunDeg=35;
  const setSun=d=>{const a=d*Math.PI/180;SUNV.value.set(Math.sin(a),.22,Math.cos(a)).normalize()};setSun(sunDeg);
+ /* v220: Night side = the sun eases round behind the globe (the same as orbiting the camera to the dark half). Christmas lights = a bulb map
+    swapped into the surface's emissive slot, ×3.2 brighter, each bulb twinkling at its own pace. Preview only; the export bakes the map on download. */
+ let nightOn=false,nightOff=0;const XMU={value:0},XTU={value:0};
+ const xmPatch=sh=>{const k='totalEmissiveRadiance*gNight*1.2';if(sh.fragmentShader.indexOf(k)<0||sh.fragmentShader.indexOf('void main() {')<0)return;sh.uniforms.uXm=XMU;sh.uniforms.uXt=XTU;
+  sh.fragmentShader=sh.fragmentShader.replace('void main() {','uniform float uXm;uniform float uXt;\nfloat xmTw(){\n#ifdef USE_UV\n vec2 c=floor(vUv*vec2(700.,350.));float h=fract(sin(dot(c,vec2(12.9898,78.233)))*43758.5453);\n return mix(1.,.3+1.2*pow(.5+.5*sin(uXt*(1.1+2.4*h)+h*6.2832),2.),uXm);\n#else\n return 1.;\n#endif\n}\nvoid main() {').replace(k,k+'*xmTw()')};
+ async function xmBuild(){if(!ed||ed.xmBusy)return;const e0=ed;e0.xmBusy=1;try{const c=e0.ctx,cv=await e0.fns.xmas(c,2048,e0.fns.xmWbl(c));if(ed!==e0||!cv)return;const t=new T.CanvasTexture(cv);t.flipY=false;t.encoding=T.sRGBEncoding;t.anisotropy=4;e0.xmTex=t;applyLive()}catch(e){console.warn('xmas lights',e)}finally{e0.xmBusy=0}}
+ function xmApply(s,E){XMU.value=E.xmas&&ed&&ed.xmTex?1:0;const u=s.userData;if(!!E.xmas===!!u.xmOn)return;
+  if(E.xmas){if(!ed.xmTex){xmBuild();return}u.xmMap0=s.emissiveMap;u.xmCol0=s.emissive.clone();s.emissiveMap=ed.xmTex;s.emissive.setRGB(1,1,1)}
+  else{s.emissiveMap=u.xmMap0||null;if(u.xmCol0)s.emissive.copy(u.xmCol0)}
+  u.xmOn=!!E.xmas;s.needsUpdate=true}
  function matchGlobe(root){
   if(typeof globeSurf!=='function'||typeof globeAtmo!=='function')return;
   root.traverse(o=>{if(!o.isMesh)return;(Array.isArray(o.material)?o.material:[o.material]).forEach(mt=>{
    const gk=mt&&mt.userData&&mt.userData.lsGlobe;if(!gk||mt.userData.__pv)return;mt.userData.__pv=1;
-   mt.onBeforeCompile=gk==='atmosphere'?(sh=>{globeAtmo(sh);sh.uniforms.uSunV=SUNV}):(sh=>{globeSurf(sh);sh.uniforms.uSunV=SUNV});mt.needsUpdate=true})})
+   mt.onBeforeCompile=gk==='atmosphere'?(sh=>{globeAtmo(sh);sh.uniforms.uSunV=SUNV}):(sh=>{globeSurf(sh);sh.uniforms.uSunV=SUNV;xmPatch(sh)});mt.needsUpdate=true})})
  }
  function addStars(){
   const n=1800,pos=new Float32Array(n*3);for(let i=0;i<n;i++){const u=Math.random()*2-1,t=Math.random()*6.2832,r=Math.sqrt(1-u*u),d=18+Math.random()*10;pos[i*3]=r*Math.cos(t)*d;pos[i*3+1]=u*d;pos[i*3+2]=r*Math.sin(t)*d}
   const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(pos,3));
   const st=new T.Points(g,new T.PointsMaterial({color:0xcfe0ff,size:1.4,sizeAttenuation:false,transparent:true,opacity:.75,depthWrite:false}));scene.add(st)}
  function ensureStage(){
-  if(renderer)return true;
+  if(renderer&&scene)return true;
   try{
-   renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false});
+   /* v220: ONE renderer for the page's lifetime. Closing used to force its WebGL context lost: the next preview then found a dead canvas, and the app's global context-loss guards showed a false 'graphics memory ran out' warning and logged a crash incident */
+   if(!renderer)renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false});
    renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
    renderer.setSize(canvas.clientWidth||640,canvas.clientHeight||420,false);
    renderer.outputEncoding=T.sRGBEncoding;
@@ -2544,25 +2592,28 @@ try{(function(){
    scene.add(new T.HemisphereLight(0xbad8ff,0x182033,1.35));
    const key=new T.DirectionalLight(0xffffff,2.2);key.position.set(4,3,5);scene.add(key);
    const fill=new T.DirectionalLight(0x6daaff,.65);fill.position.set(-4,-1,-3);scene.add(fill);
-   const loop=()=>{raf=requestAnimationFrame(loop);if(model&&!drag&&!pts.size)model.rotation.y+=.0025/zoomK;if(renderer&&scene&&camera)renderer.render(scene,camera)};loop();
+   const loop=()=>{raf=requestAnimationFrame(loop);XTU.value=performance.now()/1000%1e4;{const t=nightOn?180:0;if(nightOff!==t){nightOff+=(t-nightOff)*.07;if(Math.abs(t-nightOff)<.05)nightOff=t;setSun(sunDeg+nightOff)}}if(model&&!drag&&!pts.size)model.rotation.y+=.0025/zoomK;if(renderer&&scene&&camera)renderer.render(scene,camera)};loop();
    return true;
   }catch(e){loading.style.display='grid';loading.textContent='3D preview unavailable in this browser. You can still download the GLB.';console.warn(e);return false}
  }
  /* instant edits: no rebuild, just the loaded materials */
- function mats(){const o={surf:null,cloud:null,halo:[],haze:null};if(!model)return o;model.traverse(m=>{const mt=m.material;if(!m.isMesh||!mt)return;const nm=mt.name||'';if(nm==='Surface')o.surf=mt;else if(nm==='Clouds')o.cloud=mt;else if(nm==='Rayleigh haze')o.haze=mt;else{const q=/^Rayleigh halo (\d+)$/.exec(nm);if(q)o.halo[+q[1]-1]=mt}});return o}
+ function mats(){const o={surf:null,cloud:null,halo:[],haze:null,haloM:[],hazeM:null};if(!model)return o;model.traverse(m=>{const mt=m.material;if(!m.isMesh||!mt)return;const nm=mt.name||'';if(nm==='Surface')o.surf=mt;else if(nm==='Clouds')o.cloud=mt;else if(nm==='Rayleigh haze'){o.haze=mt;o.hazeM=m}else{const q=/^Rayleigh halo (\d+)$/.exec(nm);if(q){o.halo[+q[1]-1]=mt;o.haloM[+q[1]-1]=m}}});return o}
  function applyLive(){
   if(!ed||!model)return;const E=ed.E,m=mats();
-  if(m.surf){if(m.surf.roughnessMap)m.surf.roughness=1-.75*E.gloss;if(m.surf.normalScale)m.surf.normalScale.set(E.bump,E.bump);m.surf.emissiveIntensity=E.night}
+  if(m.surf){if(m.surf.roughnessMap)m.surf.roughness=1-.75*E.gloss;if(m.surf.normalScale)m.surf.normalScale.set(E.bump,E.bump);m.surf.emissiveIntensity=E.xmas?(E.night>0?E.night:1)*3.2:E.night;xmApply(m.surf,E)}
   if(m.cloud){m.cloud.transparent=true;m.cloud.opacity=E.cloud}
-  const A=E.atm>0&&ed.fns.atm?ed.fns.atm(ed.ctx.n,E.atm):null;
-  m.halo.forEach((mt,i)=>{if(!mt)return;const h=A&&A.atm.halo[i];mt.visible=!!h;if(h)mt.opacity=h.a});
-  if(m.haze){const v=A&&A.atm.veil;m.haze.visible=!!v;if(v)m.haze.opacity=v.a}
+  /* v220: the halo follows this export's own Atmosphere settings live: opacity, colour and height of every shell */
+  const A=E.atm>0&&ed.fns.atm?ed.fns.atm(ed.ctx.n,E.atm,ed.ctx.P):null;
+  m.halo.forEach((mt,i)=>{if(!mt)return;const h=A&&A.atm.halo[i];mt.visible=!!h;if(h){mt.opacity=h.a;if(mt.color)mt.color.setRGB(h.c[0],h.c[1],h.c[2]);if(m.haloM[i])m.haloM[i].scale.setScalar(h.r)}});
+  if(m.haze){const v=A&&A.atm.veil;m.haze.visible=!!v;if(v){m.haze.opacity=v.a;if(m.haze.color)m.haze.color.setRGB(v.c[0],v.c[1],v.c[2]);if(m.hazeM)m.hazeM.scale.setScalar(v.r)}}
  }
  function loadModel(blob,opts){
   if(!ensureStage())return;
-  const url=URL.createObjectURL(blob),old=model;
+  const url=URL.createObjectURL(blob),my=sess;
   new T.GLTFLoader().load(url,g=>{
-   if(old&&scene){scene.remove(old);try{disposeObj(old)}catch(e){}}
+   /* v220: a load that lands after the preview closed is dropped; a newer load replaces whatever model shows now (keeping its rotation) */
+   if(my!==sess||!scene){URL.revokeObjectURL(url);try{disposeObj(g.scene)}catch(e){}return}
+   const old=model;if(old&&!(opts&&opts.rot))opts=Object.assign({},opts,{rot:old.rotation.clone()});if(old){scene.remove(old);try{disposeObj(old)}catch(e){}}
    model=g.scene;matchGlobe(model);scene.add(model);
    const box=new T.Box3().setFromObject(model),center=box.getCenter(new T.Vector3()),size=box.getSize(new T.Vector3()),max=Math.max(size.x,size.y,size.z)||1;
    model.position.sub(center);model.scale.multiplyScalar(2.15/max);
@@ -2570,102 +2621,179 @@ try{(function(){
    loading.style.display='none';sub.textContent=SUB0;resize();applyLive();URL.revokeObjectURL(url);if(opts&&opts.after)try{opts.after()}catch(e){}
   },undefined,e=>{URL.revokeObjectURL(url);loading.style.display='grid';loading.textContent='Preview could not be rendered. You can still download the GLB.';console.warn('GLB preview load',e)});
  }
- /* specular edits need a re-bake (a couple of seconds at most), so they wait for you to stop moving the slider */
- /* v216: like the globe, edits preview in LOW resolution while a slider moves and rebuild in HIGH resolution once you let go */
- function scheduleRebuild(lo){sub.textContent=lo?'Updating (quick preview)…':'Updating in full quality…';clearTimeout(rebuildT);rebuildT=setTimeout(()=>doRebuild(!!lo),lo?120:350)}
+ /* v220: LIVE preview while the finger is still on a slider. Before, every slider restarted a timer (90-600 ms) on each move, so a drag
+    (one move every ~16 ms) never let it fire: nothing changed until you stopped or let go. Now every kind of edit has a cheap path that
+    changes the preview that is already loaded (uniforms and material values, or a small texture recomposed on a canvas and swapped onto
+    its material: no GLB rebuild, no GLTFLoader), and it is THROTTLED, not debounced: it runs on the first move, then again as soon as
+    the previous update is done, always with the newest values, never with queued stale work. The full-quality file is rebuilt once you
+    let go (and a rebuild that finishes after newer edits is thrown away instead of jumping back). */
+ let sess=0,fullT=0,sbT=0;const TQ={};
+ function thr(key,fn,gap){if(!ed)return;const j=TQ[key]||(TQ[key]={busy:0,again:0,t:0,tm:0});
+  if(j.busy){j.again=1;return}
+  const wait=j.t+gap-performance.now();if(wait>0){if(!j.tm)j.tm=setTimeout(()=>{j.tm=0;thr(key,fn,gap)},wait);return}
+  j.busy=1;j.t=performance.now();const my=sess;
+  Promise.resolve().then(fn).catch(e=>console.warn('glb live preview',e)).then(()=>{j.busy=0;const a=j.again;j.again=0;if(a&&my===sess)thr(key,fn,gap)})}
+ function thrStop(){for(const k in TQ){clearTimeout(TQ[k].tm);delete TQ[k]}}
+ function fullSoon(ms){if(!ed)return;clearTimeout(fullT);sub.textContent='Updating in full quality…';fullT=setTimeout(()=>doRebuild(false),ms==null?250:ms)}
+ function scheduleRebuild(lo){if(!lo)fullSoon()}
  async function doRebuild(lo){
   if(!ed||!pending)return;if(building){again=true;againLo=!!lo;return}building=true;
-  try{const rot=model?model.rotation.clone():null;ed.E.lo=!!lo;const blob=await ed.fns.finish(ed.ctx,ed.E,false);ed.E.lo=false;pending.blob=blob;
-   loadModel(blob,{rot,after:()=>{sub.textContent=lo?'Quick preview · let go for full quality':SUB0}})}
-  catch(e){ed.E.lo=false;sub.textContent='Could not update the preview: '+(e&&e.message||e);console.warn(e)}
+  const my=sess,c=ed.ctx,E=ed.E,v0=ed.ver,lv=c.lookV,gl=E.glow>.001&&!!(c.layers&&c.layers.some(l=>l.on&&!l.dark&&l.op>.001));
+  try{E.lo=!!lo;const blob=await ed.fns.finish(c,E,false);E.lo=false;
+   if(my===sess&&ed&&ed.ctx===c&&pending){pending.blob=blob;
+    if(ed.ver===v0)loadModel(blob,{after:()=>{if(ed){ed.mLook=lv;ed.mGlow=gl}sub.textContent=SUB0}})}}
+  catch(e){E.lo=false;if(my===sess){sub.textContent='Could not update the preview: '+(e&&e.message||e)}console.warn(e)}
   building=false;if(again){again=false;doRebuild(againLo)}
  }
- /* fast paths that only swap one texture on the loaded model (no file rebuild) while a slider is moving */
- function swapTex(mt,cv,alpha){if(!mt||!cv)return;const t=new T.CanvasTexture(cv);t.flipY=false;t.encoding=T.sRGBEncoding;t.wrapS=T.RepeatWrapping;t.wrapT=T.ClampToEdgeWrapping;t.minFilter=T.LinearMipmapLinearFilter;t.anisotropy=4;t.needsUpdate=true;const o=mt.map;mt.map=t;mt.needsUpdate=true;if(o&&o.dispose)setTimeout(()=>o.dispose(),50)}
- let quickBusy=false,quickAgain=null;
- async function quick(kind){
-  if(!ed||!model)return;if(quickBusy){quickAgain=kind;return}quickBusy=true;
-  try{const m=mats();
-   if(kind==='look'&&typeof bakeLook==='function'&&ed.ctx.look){const cv=await bakeLook(512,{surf:1,ss:1});swapTex(m.surf,cv)}
-   else if(kind==='cloud'&&m.cloud&&ed.fns.clouds){const q=await ed.fns.clouds(ed.ctx.n,1024,512,true);if(q&&q.canvas)swapTex(m.cloud,q.canvas)}
-   sub.textContent='Quick preview · let go for full quality'}
-  catch(e){console.warn('glb quick preview',e)}
-  quickBusy=false;if(quickAgain){const k=quickAgain;quickAgain=null;quick(k)}
- }
- let lookT=0;
- /* the globe's own menus moved into the preview: Colour & desert, Surface, Night side, Atmosphere, Clouds */
- function lookChanged(kind,e){
-  if(!ed)return;const c=ed.ctx,E=ed.E,lo=e&&e.type==='input';
-  if(kind==='look')c.lookV++;else if(kind==='cloud')c.cloudV++;
-  if(kind==='night'){setTimeout(()=>{E.night=Math.max(0,+(S.nlb==null?1:S.nlb));applyLive()},0);return}
-  if(kind==='atm'){applyLive();return}
-  clearTimeout(lookT);
-  if(lo){sub.textContent='Quick preview…';lookT=setTimeout(()=>quick(kind),90)}
-  else{clearTimeout(rebuildT);sub.textContent='Updating in full quality…';lookT=setTimeout(()=>doRebuild(false),300)}
- }
+ /* live textures: one canvas + one texture per map, re-uploaded in place */
+ const LW=1024,LV={};
+ function mkTex(cv,srgb){const t=new T.CanvasTexture(cv);t.flipY=false;t.encoding=srgb?T.sRGBEncoding:T.LinearEncoding;t.wrapS=T.RepeatWrapping;t.wrapT=T.ClampToEdgeWrapping;t.minFilter=T.LinearMipmapLinearFilter;t.anisotropy=4;t.needsUpdate=true;return t}
+ function putTex(mt,keys,t){let ch=false;keys.forEach(k=>{const o=mt[k];if(o===t)return;mt[k]=t;ch=true;if(o&&o!==LV.mapT&&o!==LV.rmT&&o!==LV.clT&&o.dispose)setTimeout(()=>{try{o.dispose()}catch(e){}},50)});if(ch)mt.needsUpdate=true;else t.needsUpdate=true}
+ function swapTex(mt,cv){if(!mt||!cv)return;const t=mkTex(cv,true),o=mt.map;mt.map=t;mt.needsUpdate=true;if(o&&o.dispose)setTimeout(()=>o.dispose(),50)}
+ const freeSrc=b=>{try{if(!b)return;if(b.close)b.close();else{b.width=b.height=1}}catch(e){}};
+ const freeSpec=g=>{if(!g)return;try{g.c.width=g.c.height=1;g.cc.width=g.cc.height=1}catch(e){}};
+ function freeLV(){freeSrc(LV.base);freeSpec(LV.spec);['mapT','rmT','clT'].forEach(k=>{try{if(LV[k])LV[k].dispose()}catch(e){}});['col','rmC','tint','clC'].forEach(k=>{if(LV[k]){LV[k].width=LV[k].height=1}});for(const k in LV)delete LV[k]}
+ /* colour base: the full bake when the look has not changed since, else the look baked small (512 px, about one GPU tile) with this export's settings */
+ async function liveBase(){const c=ed.ctx;if(LV.base&&LV.baseV===c.lookV)return LV.base;const v=c.lookV,e=c.bk&&c.bk[2048];let b=null;
+  try{if(c.look&&e&&e.v===v&&e.blob)b=await createImageBitmap(e.blob,{resizeWidth:LW,resizeHeight:LW/2,resizeQuality:'high'});
+   else if(c.look&&typeof bakeLook==='function'){if(c.prep)await c.prep(512);b=await bakeLook(512,{surf:1,ss:1,pre:c.pre})}
+   else if(c.fb)b=await createImageBitmap(c.fb,{resizeWidth:LW,resizeHeight:LW/2,resizeQuality:'high'})}catch(err){console.warn('glb live base',err)}
+  if(!ed||ed.ctx!==c){freeSrc(b);return null}
+  if(LV.base!==b)freeSrc(LV.base);LV.base=b;LV.baseV=v;return b}
+ /* specular layers -> gloss map + coloured glow, from cached layer bitmaps (no file reads, no PNG) */
+ async function liveSpec(){const c=ed.ctx,E=ed.E,key=c.specV+'|'+E.k;if('spec' in LV&&LV.specK===key)return LV.spec;let g=null;
+  if(c.layers&&c.layers.some(l=>l.on&&!l.dark&&l.op>.001)&&ed.fns.spec)g=await ed.fns.spec(c.layers,LW,LW/2,E.k,c.cache,true);
+  if(!ed||ed.ctx!==c){freeSpec(g);return null}
+  if(LV.spec&&LV.spec!==g)freeSpec(LV.spec);LV.spec=g;LV.specK=key;return g}
+ async function fastSurf(){if(!ed||!model)return;const c=ed.ctx,E=ed.E;
+  const base=await liveBase();if(!ed||ed.ctx!==c)return;
+  const g=await liveSpec();if(!ed||ed.ctx!==c||!model)return;
+  const m=mats();if(!m.surf)return;
+  if(base&&(c.lookV!==ed.mLook||E.glow>.001||ed.mGlow)){const o=LV.col||(LV.col=document.createElement('canvas'));if(o.width!==LW){o.width=LW;o.height=LW/2}const x=o.getContext('2d');
+   x.globalCompositeOperation='source-over';x.globalAlpha=1;x.imageSmoothingQuality='high';x.drawImage(base,0,0,LW,LW/2);
+   if(g&&g.cc&&E.glow>.001){let s=g.cc;if(E.spcol!=='#ffffff'){const q=LV.tint||(LV.tint=document.createElement('canvas'));q.width=g.cc.width;q.height=g.cc.height;const tq=q.getContext('2d');tq.globalCompositeOperation='source-over';tq.globalAlpha=1;tq.drawImage(g.cc,0,0);tq.globalCompositeOperation='multiply';tq.fillStyle=E.spcol;tq.fillRect(0,0,q.width,q.height);s=q}
+    x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,E.glow);x.drawImage(s,0,0,LW,LW/2);x.globalCompositeOperation='source-over';x.globalAlpha=1}
+   if(!LV.mapT)LV.mapT=mkTex(o,true);putTex(m.surf,['map'],LV.mapT)}
+  if(g){const o=LV.rmC||(LV.rmC=document.createElement('canvas'));if(o.width!==LW){o.width=LW;o.height=LW/2}o.getContext('2d').drawImage(g.c,0,0,LW,LW/2);if(!LV.rmT)LV.rmT=mkTex(o,false);putTex(m.surf,['roughnessMap','metalnessMap'],LV.rmT);m.surf.metalness=1}
+  else if(m.surf.roughnessMap){const o=m.surf.roughnessMap;m.surf.roughnessMap=null;m.surf.metalnessMap=null;m.surf.metalness=0;m.surf.roughness=.92;m.surf.needsUpdate=true;if(o!==LV.rmT&&o.dispose)setTimeout(()=>{try{o.dispose()}catch(e){}},50)}
+  applyLive()}
+ /* clouds: each layer's coverage is cached, so a live edit only re-mixes them */
+ async function fastCloud(){if(!ed||!model||!ed.fns.clouds)return;const c=ed.ctx;if(!mats().cloud)return;
+  const q=await ed.fns.clouds(c.n,LW,LW/2,true,c.P,c.clLive||(c.clLive=new Map()));if(!ed||ed.ctx!==c){if(q&&q.canvas)q.canvas.width=1;return}
+  const m=mats();if(!m.cloud)return;const o=LV.clC||(LV.clC=document.createElement('canvas'));if(o.width!==LW){o.width=LW;o.height=LW/2}const x=o.getContext('2d');x.clearRect(0,0,LW,LW/2);
+  if(q&&q.canvas){x.drawImage(q.canvas,0,0,LW,LW/2);q.canvas.width=q.canvas.height=1}
+  if(!LV.clT)LV.clT=mkTex(o,true);putTex(m.cloud,['map'],LV.clT);applyLive()}
+ function quick(kind){if(kind==='cloud')thr('cloud',fastCloud,90);else thr('surf',fastSurf,90)}
+ /* one entry point for every edit: kind says which live path shows it, live=true while the finger is down (input), false on release (change) */
+ function edited(kind,live){if(!ed)return;const c=ed.ctx;
+  if(kind==='look'||kind==='specLook'||kind==='spec'||kind==='cloud')ed.ver++;
+  if(kind==='look'){c.lookV++;thr('surf',fastSurf,90)}
+  else if(kind==='specLook'){c.specV++;thr('surf',fastSurf,90)}
+  else if(kind==='spec'){c.specV++;thr('surf',fastSurf,60)}
+  else if(kind==='cloud'){c.cloudV++;thr('cloud',fastCloud,90)}
+  else applyLive();/* card, night, atm: uniforms and material values only, every move */
+  const tex=kind==='look'||kind==='specLook'||kind==='spec'||kind==='cloud';
+  if(live){if(tex)sub.textContent='Live preview · let go for full quality'}
+  else if(tex||kind==='atm')fullSoon()}/* atm = Atmo edge (rim light in the file); the halo itself is exact live */
  /* ---- edit panel ---- */
  const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
- /* ---- the real "Specular mapper & slots" menu, moved into the preview while it is open ---- */
- let home=null,wasOpen=false,mo=null,syncT=0,syncing=false,syncAgain=false;
  const isLive=()=>!!(ed&&ed.ctx&&ed.ctx.n===S.body);
- function menuChanged(e){if(!ed||!isLive())return;clearTimeout(syncT);const lo=!!(e&&e.type==='input');sub.textContent=lo?'Quick preview…':'Updating from the menu…';syncT=setTimeout(()=>syncFromMenu(lo),lo?150:600)}
- const XM_=[['Colour & desert','look'],['Surface','look'],['Clouds (5 layers)','cloud'],['Night side','night'],['Atmosphere','atm']];let xMounted=[];
- function mountLook(){
-  if(xMounted.length||!isLive())return;
-  const all=[...document.querySelectorAll('details')].filter(d=>!menuHost.contains(d));
-  XM_.forEach(([t,kind])=>{const d=all.find(q=>{const s=q.querySelector(':scope>summary');if(!s)return false;const x=s.textContent.trim();return x===t||(x.endsWith(t)&&x.length-t.length<=4)});/* titles get an emoji icon at runtime */if(!d)return;
-   const ph=document.createElement('span');ph.hidden=true;d.parentNode.insertBefore(ph,d);const was=d.open;d.open=false;d.classList.add('glb-xm');menuHost.appendChild(d);
-   const fi=e=>lookChanged(kind,e),fc=e=>lookChanged(kind,e);d.addEventListener('input',fi,true);d.addEventListener('change',fc,true);xMounted.push({d,ph,was,fi,fc})})}
- function unmountLook(){xMounted.forEach(m=>{m.d.removeEventListener('input',m.fi,true);m.d.removeEventListener('change',m.fc,true);m.d.classList.remove('glb-xm');m.d.open=m.was;m.ph.parentNode.insertBefore(m.d,m.ph);m.ph.remove()});xMounted=[]}
- /* v218 sandbox: the globe's menus edit a temporary copy of the settings while the preview is open.
-    Nothing is saved, uploads/deletes/slots are disabled, and closing the preview puts the real globe back exactly as it was. */
- let SB=null;
- const sbEls=()=>{const ds=xMounted.map(m=>m.d);const sp=$('specMenu');if(sp&&menuHost.contains(sp))ds.push(sp);return ds};
- function sbTake(){if(SB||!isLive())return;SB={S:JSON.parse(JSON.stringify(S)),ls:{},ui:[],dis:[],uiDone:false};['ls3d','ls3d_layers_'+S.body,'ls3d_gm_'+S.body].forEach(k=>{SB.ls[k]=lsGet(k)});window.__glbSB=1}
- function sbUI(){if(!SB||SB.uiDone)return;SB.uiDone=true;sbEls().forEach(d=>{d.querySelectorAll('input[id],select[id],textarea[id]').forEach(e=>{if(e.type==='file')return;SB.ui.push({e,v:e.value,c:e.checked})});
-   d.querySelectorAll('button,input[type=file]').forEach(b=>{if(b.id==='cpkbtn'||b.closest('#cpkpre'))return;SB.dis.push([b,b.disabled]);b.disabled=true})})}
- function sbRestore(){if(!SB)return;const o=SB;SB=null;
-  o.dis.forEach(([b,d])=>{b.disabled=d});
-  const fire=e=>{e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}))};
-  o.ui.forEach(q=>{if(q.e.value!==q.v||q.e.checked!==q.c){q.e.value=q.v;q.e.checked=q.c;try{fire(q.e)}catch(_){}}});
-  try{const hx=$('cpkhex');if(hx&&o.S.ccolor){hx.value=o.S.ccolor;hx.dispatchEvent(new Event('change'))}}catch(_){}
-  for(const k in S)if(!(k in o.S))delete S[k];
-  for(const k in o.S){if(Array.isArray(S[k])&&Array.isArray(o.S[k])){S[k].length=0;S[k].push(...o.S[k])}else S[k]=o.S[k]}
-  try{uni()}catch(_){}try{setAtm()}catch(_){}try{apply(1)}catch(_){}try{updateShadows()}catch(_){}try{gmRebuild(true)}catch(_){}try{rebuildSpecLayers(true)}catch(_){}
-  Object.keys(o.ls).forEach(k=>{if(o.ls[k]==null){try{localStorage.removeItem(k)}catch(_){}}else lsSet(k,o.ls[k])});
-  window.__glbSB=0;try{sv()}catch(_){}}
- function mountMenu(){
-  mountLook();
-  const d=$('specMenu');if(!d||home||!isLive()){sbUI();return}
-  home=document.createElement('span');home.hidden=true;d.parentNode.insertBefore(home,d);
-  wasOpen=d.open;d.open=true;menuHost.appendChild(d);sbUI();
-  d.addEventListener('input',menuChanged,true);d.addEventListener('change',menuChanged,true);
-  mo=new MutationObserver(menuChanged);mo.observe(d,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['class']});
- }
- function unmountMenu(){
-  unmountLook();clearTimeout(syncT);clearTimeout(lookT);const d=$('specMenu');
-  if(mo){mo.disconnect();mo=null}
-  if(d){d.removeEventListener('input',menuChanged,true);d.removeEventListener('change',menuChanged,true)}
-  if(home&&d){home.parentNode.insertBefore(d,home);d.open=wasOpen}
-  if(home){home.remove();home=null}
- }
- async function syncFromMenu(lo){
-  if(!ed||!pending||!isLive())return;if(syncing){syncAgain=true;return}syncing=true;
-  try{
-   const c=ed.ctx,E=ed.E,L=await ed.fns.collect(c.n);
-   c.cache.forEach(b=>{try{b.close()}catch(e){}});c.cache.clear();c.layers=L;
-   const k=Math.max(0,Math.min(1,(S.spm==null?1:+S.spm)*(S.spopacity==null?1:+S.spopacity)));
-   E.k=k;E.glow=(ed.glowOn&&k>0)?k:0;E.spcol=/^#[0-9a-f]{6}$/i.test(S.spcolor||'')?S.spcolor.toLowerCase():'#ffffff';
-   await doRebuild(!!lo);
-  }catch(e){sub.textContent='Could not update from the menu: '+(e&&e.message||e);console.warn(e)}
-  syncing=false;if(syncAgain){syncAgain=false;syncFromMenu(false)}
- }
+ /* v220: the globe's own menus are shown here as COPIES that edit only this export (ed.ctx.P, plus the export's own specular layer and glare
+    mask values). No globe handler ever runs, so the real globe, its settings S and everything saved stay exactly as they were. The look bake
+    reads these values only inside pvIn(), synchronously around each GPU tile, and puts the globe's own values straight back. */
+ const XM_=[['Colour & desert','look'],['Surface','look'],['Clouds (5 layers)','cloud'],['Night side','night'],['Atmosphere','atm'],['#specMenu','spec']];
+ const KEYMAP={gla:'gl',gls:'gs'};
+ const LIVEK={look:/^(usat|ddim|spec|wat|bmp|rfl|wbl|ice|gm\d+(op|inv))$/,cloud:/^(cvol|cdef|cl\d+op|cpk(btn|body|h|s|v|hex|pre))$/,night:/^nlb$/,atm:/^(ai|ad|az|ah|gla|gls|edgeStrength|edgeColor)$/,spec:/^(spm|spopacity|spcolor|sl\d+(op|col|dark|name))$/};
+ let xMounted=[];
+ (function(){if($('gpvCss'))return;const st=document.createElement('style');st.id='gpvCss';st.textContent='#glbEditMenu .gpv-off{opacity:.38}#glbEditMenu .gpv-off,#glbEditMenu .gpv-off *{pointer-events:none}#glbEditMenu .gpv-note{font-size:11px;color:#ffd27a;margin:4px 0}#glbEditMenu button:disabled{opacity:.45}';document.head.appendChild(st)})();
+ function realMenu(t){if(t[0]==='#'){const d=$(t.slice(1));return d&&!root.contains(d)?d:null}
+  return [...document.querySelectorAll('details')].find(q=>{if(root.contains(q))return false;const s=q.querySelector(':scope>summary');if(!s)return false;const x=s.textContent.trim();return x===t||(x.endsWith(t)&&x.length-t.length<=4)})}/* titles get an emoji icon at runtime */
+ function cloneMenu(d,kind,off){const c=d.cloneNode(true);
+  const oc=d.querySelectorAll('canvas'),cc=c.querySelectorAll('canvas');cc.forEach((k,i)=>{const s=oc[i];try{if(s&&s.width&&s.height){k.width=s.width;k.height=s.height;k.getContext('2d').drawImage(s,0,0)}}catch(e){}});/* thumbnails */
+  c.open=false;c.classList.add('glb-xm');c.dataset.kind=kind;
+  [c,...c.querySelectorAll('[id]')].forEach(e=>{if(!e.id)return;e.dataset.gid=e.id;e.removeAttribute('id')});/* never duplicate a globe id */
+  c.querySelectorAll('label[for]').forEach(l=>l.removeAttribute('for'));c.querySelectorAll('input[type=file]').forEach(e=>e.remove());
+  c.querySelectorAll('input[type=color]').forEach(inp=>{const sw=inp.previousElementSibling;if(sw&&sw.classList.contains('cpk-sw'))sw.remove();const host=inp.closest('.spec-layer-row')||inp.closest('label')||inp.parentElement,bx=host&&host.nextElementSibling;if(bx&&bx.classList.contains('cpk')&&!bx.querySelector('[data-gid]'))bx.remove();inp.style.display=''});/* the copied picker is dead; rebuilt after mounting */
+  const rx=LIVEK[kind];
+  c.querySelectorAll('input,select,textarea,button').forEach(e=>{const id=e.dataset.gid||'';
+   if(!off&&rx&&rx.test(id))return;if(!off&&e.tagName==='BUTTON'&&e.closest('[data-gid=cpkpre]'))return;
+   e.disabled=true;if(e.tagName!=='BUTTON'){const w=e.closest('label,.fade-switch,.r')||e;w.classList.add('gpv-off')}});/* uploads, deletes, slots and globe-only settings cannot change this export */
+  if(off){const p=document.createElement('p');p.className='gpv-note';p.textContent='Not part of this export, so these settings cannot change it.';const s=c.querySelector(':scope>summary');if(s)s.after(p)}
+  return c}
+ function wireCpk(x){const g=n=>x.querySelector('[data-gid="'+n+'"]'),btn=g('cpkbtn'),body=g('cpkbody'),H=g('cpkh'),Sa=g('cpks'),Va=g('cpkv'),hx=g('cpkhex'),pre=g('cpkpre');if(!btn||!body||!H||!Sa||!Va||btn.disabled)return;
+  const P=()=>ed&&ed.ctx&&ed.ctx.P;let cur=cpX2H(/^#[0-9a-f]{6}$/i.test((P()||{}).ccolor||'')?P().ccolor:'#ffffff');
+  const paint=()=>{const hex=cpH2X(cur.h,cur.s,cur.v);btn.style.background=hex;H.value=cur.h;Sa.value=cur.s;Va.value=cur.v;if(hx&&document.activeElement!==hx)hx.value=hex;Sa.style.background='linear-gradient(90deg,'+cpH2X(cur.h,0,cur.v)+','+cpH2X(cur.h,100,cur.v)+')';Va.style.background='linear-gradient(90deg,#000,'+cpH2X(cur.h,cur.s,100)+')';return hex};
+  const set=live=>{const hex=paint(),p=P();if(!p)return;p.ccolor=hex;edited('cloud',live)};
+  btn.onclick=()=>{body.hidden=!body.hidden};
+  [[H,'h'],[Sa,'s'],[Va,'v']].forEach(([el,k])=>{el.addEventListener('input',()=>{cur[k]=+el.value;set(true)});el.addEventListener('change',()=>{cur[k]=+el.value;set(false)})});
+  if(hx)hx.addEventListener('change',()=>{let v=hx.value.trim();if(v[0]!=='#')v='#'+v;if(/^#[0-9a-f]{6}$/i.test(v)){cur=cpX2H(v.toLowerCase());set(false)}else paint()});
+  if(pre)pre.querySelectorAll('button').forEach(b=>{b.onclick=()=>{const m=/rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(b.style.background||'');if(!m)return;cur=cpX2H('#'+[m[1],m[2],m[3]].map(q=>(+q).toString(16).padStart(2,'0')).join(''));set(false)}});
+  paint()}
+ function mountMenu(){unmountMenu();if(!ed||!isLive())return;const c=ed.ctx;
+  XM_.forEach(([t,kind])=>{const d=realMenu(t);if(!d)return;
+   const off=(kind==='look'&&!c.look)||(kind==='cloud'&&!c.wantCl)||(kind==='atm'&&!c.hasAir)||(kind==='spec'&&!(c.layers&&c.layers.length))||(kind==='night'&&!c.nt);
+   const x=cloneMenu(d,kind,off);if(kind==='spec')x.open=true;
+   /* layer / mask / cloud slots that hold no image in this export cannot change it either */
+   const dim=b=>{b.classList.add('gpv-off');b.querySelectorAll('input,select,button,textarea').forEach(e=>e.disabled=true)};
+   if(!off&&kind==='spec')x.querySelectorAll('[data-gid^=slb]').forEach(b=>{const i=+b.dataset.gid.slice(3)-1;if(!c.layers.some(l=>l.i===i))dim(b)});
+   if(!off&&kind==='look')x.querySelectorAll('[data-gid^=gmb]').forEach(b=>{const i=+b.dataset.gid.slice(3)-1;if(!(typeof gmLayers!=='undefined'&&gmLayers[i]))dim(b)});
+   if(!off&&kind==='cloud')x.querySelectorAll('[data-gid$=op]').forEach(e=>{const q=/^cl(\d+)op$/.exec(e.dataset.gid);if(!q)return;const i=+q[1]-1;let has=false;try{has=!!((typeof cloudTex!=='undefined'&&cloudTex[i])||(typeof cloudFiles!=='undefined'&&cloudFiles[i]))}catch(_){}if(!has){const b=e.closest('.spec-layer-block');if(b)dim(b)}});
+   menuHost.appendChild(x);xMounted.push(x)});
+  xMounted.forEach(x=>{x.querySelectorAll('input[type=color]').forEach(i=>{if(!i.disabled)try{upgradeColorInput(i)}catch(e){}});wireCpk(x)})}
+ function unmountMenu(){xMounted.forEach(x=>x.remove());xMounted=[]}
+ const unit=v=>Math.max(0,Math.min(1,+v||0));
+ function syncLayers(){if(!ed||!ed.SL)return;ed.ctx.layers.forEach(l=>{const L=ed.SL[l.i];if(L){l.op=L.op;l.col=L.col;l.dark=!!L.dark;l.name=L.name}})}
+ function onMenu(e,live){if(!ed)return;const t=e.target,id=t&&t.dataset?t.dataset.gid:'';if(!id||/^cpk/.test(id))return;const d=t.closest&&t.closest('details.glb-xm');if(!d||!menuHost.contains(d))return;
+  const kind=d.dataset.kind,rx=LIVEK[kind];if(!rx||!rx.test(id)||t.disabled)return;
+  if(t.type==='range'){const w=t.parentNode,o=w&&w.classList&&w.classList.contains('sl')?w.querySelector('output'):null;if(o)o.textContent=(+t.value).toFixed(+t.step>=1?0:2)}
+  const c=ed.ctx,P=c.P,E=ed.E,v=t.type==='checkbox'?(t.checked?1:0):(t.type==='range'||t.type==='number')?+t.value:t.value;let m,k=kind;
+  if((m=/^sl(\d+)(op|col|dark|name)$/.exec(id))){const i=+m[1]-1,L=ed.SL[i]||(ed.SL[i]={op:1,col:'#ffffff',dark:false,name:'Layer '+(i+1)});
+   if(m[2]==='name'){L.name=String(v).trim()||('Layer '+(i+1));syncLayers();return}
+   const wasDark=!!L.dark;if(m[2]==='op')L.op=unit(v);else if(m[2]==='col'){if(/^#[0-9a-f]{6}$/i.test(v))L.col=v.toLowerCase()}else L.dark=!!v;
+   syncLayers();if((L.dark||wasDark)&&typeof specLayers!=='undefined'&&specLayers[i]){ed.gmDirty=1;ed.gmV++;c.lookV++;k='specLook'}}
+  else if((m=/^gm(\d+)(op|inv)$/.exec(id))){const i=+m[1]-1,G=ed.GM[i]||(ed.GM[i]={op:1,inv:false});if(m[2]==='op')G.op=unit(v);else G.inv=!!v;ed.gmDirty=1;ed.gmV++}
+  else if((m=/^cl(\d+)op$/.exec(id))){const i=+m[1]-1;if(!Array.isArray(P.cop))P.cop=[];P.cop[i]=+v}
+  else{P[KEYMAP[id]||id]=v;
+   if(kind==='spec'){const kk=Math.max(0,Math.min(1,(P.spm==null?1:+P.spm)*(P.spopacity==null?1:+P.spopacity)));E.k=kk;E.glow=(ed.glowOn&&kk>0)?kk:0;E.spcol=/^#[0-9a-f]{6}$/i.test(P.spcolor||'')?P.spcolor.toLowerCase():'#ffffff'}
+   if(kind==='night')E.night=Math.max(0,+(P.nlb==null?1:P.nlb));
+   if(kind==='atm'&&!/^edge/.test(id))k='atmLive'}
+  edited(k,live)}
+ menuHost.addEventListener('input',e=>onMenu(e,true));menuHost.addEventListener('change',e=>onMenu(e,false));
+ /* the export's own specular layer and glare mask values, read once from the globe's menus (read only) */
+ function initLive(){const c=ed.ctx;ed.SL=[];ed.GM=[];ed.gmDirty=0;ed.gmV=0;if(ed.gmT&&ed.gmT.tex){try{ed.gmT.tex.dispose()}catch(e){}}ed.gmT=null;
+  try{(typeof layerInfo==='function'?layerInfo():[]).forEach((q,i)=>{ed.SL[i]={op:unit(q.opacity),col:/^#[0-9a-f]{6}$/i.test(q.color||'')?q.color.toLowerCase():'#ffffff',dark:!!q.dark,name:q.name}})}catch(e){}
+  try{for(let i=0;i<(typeof gmCount==='number'?gmCount:0);i++){const op=$('gm'+(i+1)+'op'),iv=$('gm'+(i+1)+'inv');ed.GM[i]={op:op?unit(op.value):1,inv:!!(iv&&iv.checked)}}}catch(e){}}
+ /* glare masks + Darken-mode layers composed with the export's values (mirrors gmRebuildNow, into a texture of the preview's own) */
+ function pvMask(cap){const act=[],dk=[];for(let i=0;i<GM_MAX;i++)if(gmLayers[i])act.push(i);for(let i=0;i<MAX_SPEC_LAYERS;i++)if(specLayers[i]&&ed.SL[i]&&ed.SL[i].dark)dk.push(i);
+  if(!act.length&&!dk.length)return{tex:null,gm:0,dk:0};
+  const sp=i=>specLayers[i],w=Math.min(cap,Math.max(...act.map(i=>gmLayers[i].c.width),...dk.map(i=>sp(i).width))),h=Math.max(1,Math.min(cap/2,Math.max(...act.map(i=>gmLayers[i].c.height),...dk.map(i=>Math.round(sp(i).height*Math.min(4096,sp(i).width)/sp(i).width)))));
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;const x=cv.getContext('2d');x.fillStyle='#000';x.fillRect(0,0,w,h);x.globalCompositeOperation='lighter';
+  const t=document.createElement('canvas');t.width=w;t.height=h;const tx=t.getContext('2d');
+  const put=(src,inv,tint,al)=>{tx.globalCompositeOperation='source-over';tx.globalAlpha=1;tx.fillStyle='#000';tx.fillRect(0,0,w,h);tx.drawImage(src,0,0,w,h);if(inv){tx.globalCompositeOperation='difference';tx.fillStyle='#fff';tx.fillRect(0,0,w,h)}tx.globalCompositeOperation='multiply';tx.fillStyle=tint;tx.fillRect(0,0,w,h);x.globalAlpha=al;x.drawImage(t,0,0,w,h)};
+  for(const i of act){const G=ed.GM[i]||{op:1,inv:false};put(gmLayers[i].c,G.inv,'#ff0000',unit(G.op))}
+  for(const i of dk)put(sp(i),false,'#00ff00',unit(ed.SL[i].op));
+  t.width=t.height=1;x.globalAlpha=1;x.globalCompositeOperation='source-over';
+  const tex=new T.CanvasTexture(cv);tex.wrapS=T.RepeatWrapping;tex.wrapT=T.ClampToEdgeWrapping;tex.minFilter=T.LinearMipmapLinearFilter;tex.magFilter=T.LinearFilter;tex.generateMipmaps=true;tex.anisotropy=4;tex.needsUpdate=true;
+  return{tex,gm:act.length?1:0,dk:dk.length?1:0}}
+ async function pvPrep(W){if(!ed||!ed.gmDirty)return;const cap=W>2048?4096:W>512?2048:1024,g=ed.gmT;if(g&&g.v===ed.gmV&&g.cap>=cap)return;
+  let n={tex:null,gm:0,dk:0};try{n=pvMask(cap)}catch(e){console.warn('glb preview masks',e)}n.v=ed.gmV;n.cap=cap;ed.gmT=n;if(g&&g.tex)try{g.tex.dispose()}catch(e){}}
+ /* the uniforms the look bake reads, set from this export's settings exactly as uni()/applyNight() set them for the globe; returns their restore */
+ function pvIn(){if(!ed||!ed.ctx||!ed.ctx.P||!isLive())return null;const P=ed.ctx.P,L=[],g=S.gfx|0;
+  const set=(u,v)=>{if(u&&((typeof v==='number'&&isFinite(v))||(v&&v.isTexture)))L.push([u,u.value,v])};
+  if(P.wbl!==S.wbl)set(U.uBl,+P.wbl);if(P.ice!==S.ice)set(U.uIc,P.ice/255);if(P.spec!==S.spec)set(U.spec,+P.spec);if(P.wat!==S.wat)set(U.wat,+P.wat);if(P.rfl!==S.rfl)set(U.rfl,+P.rfl);
+  if(P.usat!==S.usat)set(U.usat,+P.usat);if(P.ddim!==S.ddim)set(U.ddim,+P.ddim);
+  if(P.bmp!==S.bmp)set(U.bmS,P.bmp*(bt.bump?(S.bmm==null?1:S.bmm):1)*[1.6,2.4,3.2,4.2,5.2][g]*B[S.body][0]/6371);
+  if(ed.gmDirty&&ed.gmT){set(U.gmask,ed.gmT.tex||ph);set(U.hasGM,ed.gmT.gm);set(U.hasDK,ed.gmT.dk)}
+  if(!L.length)return null;L.forEach(q=>{q[0].value=q[2]});return()=>{for(let i=L.length-1;i>=0;i--)L[i][0].value=L[i][1]}}
+ function resetEdits(){if(!ed)return;const c=ed.ctx;Object.assign(ed.E,ed.E0);c.layers.forEach((l,j)=>Object.assign(l,ed.L0[j]));
+  if(ed.P0)c.P=JSON.parse(JSON.stringify(ed.P0));if(isLive())initLive();
+  c.lookV++;c.specV++;c.cloudV++;ed.ver++;buildPanel();mountMenu();applyLive();thr('surf',fastSurf,0);if(mats().cloud)thr('cloud',fastCloud,0);fullSoon(0)}
  function buildPanel(){
   if(!ed){lookEl.innerHTML='';return}
   const live=isLive();
   const c=ed.ctx,E=ed.E,pc=v=>Math.round(v*100);
   const rg=(id,lab,min,max,val)=>'<label class="r">'+lab+'<input type="range" id="'+id+'" min="'+min+'" max="'+max+'" step="1" value="'+val+'"></label>';
-  let h=live?'<p class="hint">These are the globe\'s own menus (Colour &amp; desert, Surface, Clouds, Night side, Atmosphere and the Specular mapper &amp; slots), but here they only change this export: your real globe is put back exactly as it was when you close the preview, and nothing is saved. Uploads, deletes and slots are switched off here. While you slide, the preview updates in low resolution; let go and it rebuilds in full quality.</p>':'<p class="hint">This world is not the one open on the globe, so its specular layers can only be tuned here. Open it on the globe to use the full Specular mapper &amp; slots menu.</p>';
+  let h=live?'<p class="hint">These are copies of the globe\'s own menus (Colour &amp; desert, Surface, Clouds, Night side, Atmosphere and the Specular mapper &amp; slots). They change only this export, never your real globe, and nothing is saved. Greyed-out settings cannot change the export. Every slider updates the preview live while you drag (in lower resolution); let go and it rebuilds in full quality.</p>':'<p class="hint">This world is not the one open on the globe, so its specular layers can only be tuned here. Open it on the globe to use the full Specular mapper &amp; slots menu.</p>';
   if(!live){h+='<div class="spec-card"><h4>Specular layers <small>('+c.layers.length+' in this export)</small></h4>';
   if(c.layers.length){c.layers.forEach((l,j)=>{h+='<div class="spec-layer-block"><div class="spec-layer-title">Layer '+(l.i+1)+' · '+(l.i===0?'Base':'Additive')+' map</div>'
     +'<div class="spec-pick-row"><span class="spec-chip ok" style="grid-column:1/3">Image in export</span><canvas class="thumb" data-th="'+j+'" width="64" height="32"></canvas></div>'
@@ -2680,30 +2808,40 @@ try{(function(){
   if(c.nt)h+=rg('geN','Night lights',0,100,pc(E.night));
   h+='</div><div class="r bt"><button type="button" id="geReset">Reset edits</button></div>';
   lookEl.innerHTML=h;
-  const on=(id,fn,spec)=>{const e=lookEl.querySelector('#'+id);if(!e)return;e.oninput=()=>{fn(e);if(spec)scheduleRebuild(true);else applyLive()};if(spec)e.onchange=()=>{fn(e);scheduleRebuild(false)}};
+  /* v220: live while the finger moves (specular ones through the live surface path), full-quality rebuild on release */
+  const on=(id,fn,spec)=>{const e=lookEl.querySelector('#'+id);if(!e)return;e.oninput=()=>{fn(e);edited(spec?'spec':'card',true)};e.onchange=()=>{fn(e);edited(spec?'spec':'card',false)}};
   on('geK',e=>E.k=e.value/100,1);on('geG',e=>E.glow=e.value/100,1);on('geC',e=>E.spcol=e.value.toLowerCase(),1);
-  on('geSun',e=>{sunDeg=+e.value;lsSet('ls3d_glbsun',String(sunDeg));setSun(sunDeg)});on('geB',e=>E.bump=e.value/100);on('geS',e=>E.gloss=e.value/100);on('geA',e=>E.atm=e.value/50);on('geL',e=>E.cloud=e.value/100);on('geN',e=>E.night=e.value/100);
-  lookEl.querySelectorAll('[data-le]').forEach(e=>e.onchange=()=>{c.layers[+e.dataset.le].on=e.checked;scheduleRebuild(false)});
-  lookEl.querySelectorAll('[data-lo]').forEach(e=>{e.oninput=()=>{c.layers[+e.dataset.lo].op=e.value/100;scheduleRebuild(true)};e.onchange=()=>{c.layers[+e.dataset.lo].op=e.value/100;scheduleRebuild(false)}});
-  lookEl.querySelectorAll('[data-lc]').forEach(e=>{e.oninput=()=>{c.layers[+e.dataset.lc].col=e.value.toLowerCase();scheduleRebuild(true)};e.onchange=()=>scheduleRebuild(false)});
+  on('geSun',e=>{sunDeg=+e.value;setSun(sunDeg+nightOff)});{const e=lookEl.querySelector('#geSun');if(e)e.addEventListener('change',()=>lsSet('ls3d_glbsun',String(sunDeg)))}on('geB',e=>E.bump=e.value/100);on('geS',e=>E.gloss=e.value/100);on('geA',e=>E.atm=e.value/50);on('geL',e=>E.cloud=e.value/100);on('geN',e=>E.night=e.value/100);
+  lookEl.querySelectorAll('[data-le]').forEach(e=>e.onchange=()=>{c.layers[+e.dataset.le].on=e.checked;edited('spec',false)});
+  lookEl.querySelectorAll('[data-lo]').forEach(e=>{e.oninput=()=>{c.layers[+e.dataset.lo].op=e.value/100;edited('spec',true)};e.onchange=()=>{c.layers[+e.dataset.lo].op=e.value/100;edited('spec',false)}});
+  lookEl.querySelectorAll('[data-lc]').forEach(e=>{e.oninput=()=>{c.layers[+e.dataset.lc].col=e.value.toLowerCase();edited('spec',true)};e.onchange=()=>{c.layers[+e.dataset.lc].col=e.value.toLowerCase();edited('spec',false)}});
   lookEl.querySelectorAll('[data-ln]').forEach(e=>e.oninput=()=>{c.layers[+e.dataset.ln].name=e.value.trim()||('Layer '+(c.layers[+e.dataset.ln].i+1))});
   lookEl.querySelectorAll('canvas[data-th]').forEach(cv=>{const l=c.layers[+cv.dataset.th];if(!l||!l.b)return;createImageBitmap(l.b,{resizeWidth:64,resizeHeight:32,resizeQuality:'high'}).then(bm=>{try{cv.getContext('2d').drawImage(bm,0,0,64,32)}catch(e){}bm.close()}).catch(()=>{})});
-  lookEl.querySelector('#geReset').onclick=()=>{if(!ed)return;const keep=isLive()?{k:E.k,glow:E.glow,spcol:E.spcol}:{};Object.assign(ed.E,ed.E0,keep);if(!isLive())c.layers.forEach((l,j)=>Object.assign(l,ed.L0[j]));buildPanel();scheduleRebuild(false)};
+  lookEl.querySelector('#geReset').onclick=()=>resetEdits();
  }
  function showEdit(on){panel.classList.toggle('on',!!on);sw.checked=!!on;lsSet('ls3d_glbedit',on?'1':'0');setTimeout(resize,30)}
  sw.onchange=()=>showEdit(sw.checked);
  function showGlbPreview(blob,name,edit){
-  clearTimeout(rebuildT);freeEd();
-  unmountMenu();sbRestore();pending={blob,name};if(edit){ed=edit;ed.glowOn=!!($('gbSpec')&&$('gbSpec').checked);ed.E0=Object.assign({},edit.E);ed.L0=edit.ctx.layers.map(l=>({on:l.on,op:l.op,col:l.col,name:l.name}))}
+  clearTimeout(fullT);thrStop();unmountMenu();freeEd();sess++;
+  pending={blob,name};ed=null;{const b=$('glbXmasBtn');if(b)b.setAttribute('aria-pressed','false')}
+  if(edit){ed=edit;const c=ed.ctx;ed.glowOn=!!($('gbSpec')&&$('gbSpec').checked);ed.E0=Object.assign({},edit.E);ed.L0=c.layers.map(l=>({on:l.on,op:l.op,col:l.col,name:l.name,dark:!!l.dark}));ed.ver=0;
+   /* v220: the export's own copy of the settings (the globe's S is never written) and the hooks that let its look bake use them */
+   if(!c.P)c.P=JSON.parse(JSON.stringify(S));ed.P0=JSON.parse(JSON.stringify(c.P));c.pre=pvIn;c.prep=pvPrep;c.specV=c.specV||0;
+   ed.mLook=c.lookV;ed.mGlow=ed.E.glow>.001&&c.layers.some(l=>l.on&&!l.dark&&l.op>.001);if(isLive())initLive()}
+  /* v220: the real globe is frozen (not redrawn, no physics step) while the full-screen preview covers it, and every save is blocked */
+  clearTimeout(sbT);window.__glbSB=1;window.__glbPause=1;
   root.classList.add('on');root.setAttribute('aria-hidden','false');
   loading.style.display='grid';loading.textContent='Loading 3D globe…';
-  if(ed)sbTake();buildPanel();mountMenu();showEdit(lsGet('ls3d_glbedit')==='1');
+  buildPanel();try{mountMenu()}catch(e){console.warn('glb preview menus',e)}showEdit(lsGet('ls3d_glbedit')==='1');
   loadModel(blob,null);
  }
  function resize(){if(!renderer||!camera)return;const w=Math.max(1,canvas.clientWidth),h=Math.max(1,canvas.clientHeight);renderer.setSize(w,h,false);camera.aspect=w/h;
   /* v216: frame the whole globe + glow on tall phone screens too (was cropped to the middle of the planet) */
   const v=camera.fov*Math.PI/360,hz=Math.atan(Math.tan(v)*camera.aspect);camera.position.set(0,0,1.16/Math.sin(Math.min(v,hz))/zoomK);camera.updateProjectionMatrix()}
- function close(){clearTimeout(rebuildT);unmountMenu();sbRestore();zoomK=1;try{if(BLK.tex){BLK.tex.dispose();BLK.tex=null;BLK.img=null}}catch(_){}root.classList.remove('on');root.setAttribute('aria-hidden','true');disposePreview();freeEd();ed=null;lookEl.innerHTML=''}
+ function close(){window.__glbPause=0;clearTimeout(fullT);thrStop();unmountMenu();sess++;zoomK=1;try{if(BLK.tex){BLK.tex.dispose();BLK.tex=null;BLK.img=null}}catch(_){}root.classList.remove('on');root.setAttribute('aria-hidden','true');disposePreview();freeEd();ed=null;pending=null;lookEl.innerHTML='';
+  /* v220: the globe was never touched, so nothing has to be put back: it just runs again. Saving stays blocked one more second so the
+     delayed autosave a preview slider may have started cannot fire as a write. */
+  window.__glbPause=0;clearTimeout(sbT);sbT=setTimeout(()=>{window.__glbSB=0},1200)}
  /* drag = rotate, pinch or mouse wheel = zoom (v216) */
  const pts=new Map();let pin=0;const zoomTo=k=>{zoomK=Math.max(1,Math.min(8,k));resize()};
  canvas.style.touchAction='none';
@@ -2715,7 +2853,10 @@ try{(function(){
  canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
  canvas.addEventListener('wheel',e=>{if(!model)return;e.preventDefault();zoomTo(zoomK*(e.deltaY<0?1.12:1/1.12))},{passive:false});
  $('glbPreviewClose').onclick=close;
- $('glbPreviewAgain').onclick=()=>{if(!pending)return;if(ed){clearTimeout(rebuildT);doRebuild(false)}else loadModel(pending.blob,null)};
+ /* v220: view buttons, usable without Edit */
+ $('glbNightBtn').onclick=()=>{nightOn=!nightOn;const b=$('glbNightBtn');b.textContent=nightOn?'☀️ Day side':'🌙 Night side';b.setAttribute('aria-pressed',String(nightOn))};
+ $('glbXmasBtn').onclick=()=>{if(!ed)return;const E=ed.E;E.xmas=!E.xmas;$('glbXmasBtn').setAttribute('aria-pressed',String(!!E.xmas));if(E.xmas&&!nightOn)$('glbNightBtn').onclick();applyLive()};
+ $('glbPreviewAgain').onclick=()=>{if(!pending)return;if(ed)fullSoon(0);else loadModel(pending.blob,null)};/* v220: shows 'Updating in full quality…' while it rebuilds */
  $('glbPreviewDownload').onclick=async()=>{
   if(!pending)return;const b=$('glbPreviewDownload'),t=b.textContent;b.disabled=true;b.textContent='Building full quality…';
   try{let blob=pending.blob,info=window.__pendingGlobeGLB&&window.__pendingGlobeGLB.info||'';
@@ -4787,7 +4928,7 @@ window.__pxAuto=1;
  if(cb){cb.checked=on&&FPL.coarse;cb.disabled=!FPL.coarse;cb.onchange=()=>{on=cb.checked&&FPL.coarse;try{localStorage.setItem('ls3d_autores',cb.checked?'1':'0')}catch(e){}if(!on){window.__pxAuto=1;try{sessionStorage.removeItem('ls3d_pxauto')}catch(e){}try{rsz()}catch(e){}}slowN=fastN=0;note()}}
  note();
 })();
-function frame(t){requestAnimationFrame(frame);if(window.__smeOpen||window.__wpcPause)return;if(fpSkip(t))return;try{frameBody(t)}catch(e){window.__frErr=(window.__frErr||0)+1;try{if(rt){r.setRenderTarget(rt);r.render(sc,cam);r.setRenderTarget(null);r.render(PS,PC)}else{cam.layers.enable(1);r.render(sc,cam)}}catch(_){try{r.setRenderTarget(null)}catch(_2){}}try{cam.layers.disable(1)}catch(_){}if(window.__frErr<4||window.__frErr%120===0){try{console.error(e);const h=document.getElementById('hud');h.style.whiteSpace='pre-wrap';h.style.maxWidth='calc(100vw - 90px)';h.textContent='Render error (send me this):\n'+(e&&e.message||e)+'\n'+String(e&&e.stack||'').split('\n').slice(1,4).join('\n')}catch(_){}}}}
+function frame(t){requestAnimationFrame(frame);if(window.__smeOpen||window.__wpcPause||window.__glbPause)return;/* v220: __glbPause = the GLB export preview covers the screen: the globe is frozen and untouched until it closes */if(fpSkip(t))return;try{frameBody(t)}catch(e){window.__frErr=(window.__frErr||0)+1;try{if(rt){r.setRenderTarget(rt);r.render(sc,cam);r.setRenderTarget(null);r.render(PS,PC)}else{cam.layers.enable(1);r.render(sc,cam)}}catch(_){try{r.setRenderTarget(null)}catch(_2){}}try{cam.layers.disable(1)}catch(_){}if(window.__frErr<4||window.__frErr%120===0){try{console.error(e);const h=document.getElementById('hud');h.style.whiteSpace='pre-wrap';h.style.maxWidth='calc(100vw - 90px)';h.textContent='Render error (send me this):\n'+(e&&e.message||e)+'\n'+String(e&&e.stack||'').split('\n').slice(1,4).join('\n')}catch(_){}}}}
 /* v105: GPU ground probe. The camera hitbox used a CPU copy of the terrain shader; any difference between that copy and what the GPU really draws (bump strength, level of detail, map filtering) made the camera float over low ground and sink into mountains. This renders the SAME hF() height function the tiles use, at the camera point and the hitbox ring, into a tiny float target and reads it back, so the hitbox follows exactly the ground that is drawn. Falls back to the CPU copy if anything is unavailable. */
 function gpuGround(a,R){
  if(!hm)return null;
@@ -11444,7 +11585,7 @@ const ITEMS=[['ms','Multiple scattering','Light bouncing several times: soft glo
  ['pill','Light pillars','Vertical beams above and below the low sun from flat falling ice crystals. Auto: sunrise or sunset in cold, icy air.'],
  ['cor','Corona & iridescence','Coloured rings tight round the sun when thin cloud covers it, and pastel colours on thin cloud edges near the sun.'],
  ['glory','Glory','Rainbow rings round your shadow point on clouds or fog below you (fly or fall above a cloud deck with the sun behind you).'],
- ['heil','Heiligenschein','A bright glow round the shadow of your head on the ground (opposition surge).'],
+ ['heil','Heiligenschein','A bright glow round the shadow of your head on the ground (opposition surge). Auto leaves it off (on screen it looks like a white dot opposite the sun); pick Always to see it on land.'],
  ['anti','Crepuscular & anticrepuscular rays','Light and shadow beams fanning from the low sun and converging again on the opposite side of the sky. Auto: sunrise or sunset with broken cloud.'],
  ['gf','Refraction & green flash','Near the horizon the air lifts and squashes the sun; a green rim flashes on its top edge as it sets or rises.'],
  ['twk','Twinkling stars','Stars flicker and flash colours through turbulent air, most near the horizon; steady from space.'],
@@ -11559,7 +11700,7 @@ OPX.draw=(t,a)=>{
  u.kGlory.value=air?pick('glory',OPX.gk)*ss(0,3,seD)*(md('glory')===2?(1-inC):1):0;}u.aGlo.value=md('glory')===2?.7:0;
  /* v217: heiligenschein needs dewy grass / vegetation, so never over open water (it showed as a white blob on the sea opposite the sun) */
  {const nw=performance.now(),HW=OPX.hw||(OPX.hw={t:-1e9,la:9,lo:9,w:false});if(nw-HW.t>800&&(Math.abs(st.lat-HW.la)>2e-4||Math.abs(st.lon-HW.lo)>2e-4||nw-HW.t>4000)){HW.t=nw;HW.la=st.lat;HW.lo=st.lon;try{const M=typeof hm!=='undefined'&&hm&&hm.w?hm:null;let n=0;if(M){const cx=Math.floor((st.lon/6.283185307+.5)*M.W),cy=Math.floor((1-(st.lat/Math.PI+.5))*M.H);for(let j=-1;j<=1;j++)for(let i=-1;i<=1;i++){const y=Math.max(0,Math.min(M.H-1,cy+j)),x=((cx+i)%M.W+M.W)%M.W;n+=M.w[y*M.W+x]}}HW.w=n>=5}catch(e){HW.w=false}}
-  u.kHeil.value=HW.w?0:pick('heil',(seD>3&&seD<50&&(st.alt||0)<.06)?1:0)*(seD>0?1:0);/* v217: Auto only when you stand or drive near the ground (it is the glow round your own shadow); from the air it read as a floating white dot */if(HW.w)u.aGlo.value=0}
+  u.kHeil.value=HW.w?0:pick('heil',0)*(seD>0?1:0);/* v219: Auto never draws it - on a phone screen it only ever read as a glowing white dot opposite the sun, even standing on land; pick Always to see it (v217 had limited Auto to below 60 m, which still showed it standing on land) */if(HW.w)u.aGlo.value=0}
  u.kAnti.value=air?pick('anti',(seD>-4&&seD<10&&cov>.15&&cov<.85)?1:0)*(seD>-6&&seD<15?1:0)*(alt<30?1:0):0;
  u.kGf.value=(sunM.material.uniforms.uGF&&sunM.visible)?sunM.material.uniforms.uGF.value:0;u.sqF.value=sunM.material.uniforms.uSq?sunM.material.uniforms.uSq.value:1;u.sunA.value.copy(sunM.position).sub(cam.position).normalize();
  const any=u.kGf.value+u.kRain.value+u.kHalo.value+u.kPill.value+u.kCor.value+u.kGlory.value+u.kHeil.value+u.kAnti.value;OPX.st={sEl:seD,cov,rain,any};
