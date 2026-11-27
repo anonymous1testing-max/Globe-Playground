@@ -9624,6 +9624,83 @@ const TB=SUCK+1.4,NG=LOW?500:1100,NF=LOW?140:320,_bd=new V,CH=new TT.Color(.045,
 const Z=new V(0,0,1),_a=new V,_b=new V,_c=new V,_q=new TT.Quaternion,tp=new Float32Array(NS*3);
 const GBf=()=>(typeof MODGB==='number'?MODGB:.0105)+.002,DRP=()=>(typeof AST!=='undefined'&&+AST.drop)||0;
 let RAD=6371,GB=.0125,DR=0,R_=null,runs=[];
+/* v226: wind vortex, storm aura, burn & crack marks, final explosion */
+const _r0=new V,_rd=new V,_e2=new V,RC=new TT.Raycaster(),booms=[];let CRK=null,SCO=null;
+function crackTex(){const cv=document.createElement('canvas');cv.width=cv.height=128;const g=cv.getContext('2d'),gr=g.createRadialGradient(64,64,0,64,64,60);
+ gr.addColorStop(0,'rgba(12,9,7,.92)');gr.addColorStop(.45,'rgba(28,20,14,.7)');gr.addColorStop(.8,'rgba(45,32,22,.25)');gr.addColorStop(1,'rgba(45,32,22,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);
+ g.strokeStyle='rgba(5,4,3,.95)';g.lineCap='round';
+ const br=(x,y,a,l,w,d)=>{if(d>4||l<4)return;g.lineWidth=w;g.beginPath();g.moveTo(x,y);for(let i=0;i<4;i++){a+=rnd(-.5,.5);x+=Math.cos(a)*l/4;y+=Math.sin(a)*l/4;g.lineTo(x,y)}g.stroke();br(x,y,a+rnd(-.8,.8),l*.6,w*.65,d+1);if(Math.random()<.6)br(x,y,a+rnd(-1.2,1.2),l*.5,w*.6,d+1)};
+ for(let i=0;i<6;i++)br(64,64,i*TAU/6+rnd(-.3,.3),rnd(22,34),2.4,0);return new TT.CanvasTexture(cv)}
+function scorchTex(){const S_=256,cv=document.createElement('canvas');cv.width=cv.height=S_;const g=cv.getContext('2d'),gr=g.createRadialGradient(128,128,0,128,128,126);
+ gr.addColorStop(0,'rgba(6,5,4,.97)');gr.addColorStop(.35,'rgba(18,13,10,.9)');gr.addColorStop(.7,'rgba(48,34,24,.5)');gr.addColorStop(1,'rgba(60,45,30,0)');g.fillStyle=gr;g.fillRect(0,0,S_,S_);
+ for(let i=0;i<900;i++){const a=rnd(0,TAU),r=Math.pow(Math.random(),.7)*120;g.fillStyle='rgba(0,0,0,'+rnd(.1,.35).toFixed(2)+')';g.fillRect(128+Math.cos(a)*r,128+Math.sin(a)*r,rnd(1,3),rnd(1,3))}
+ g.strokeStyle='rgba(10,8,6,.35)';for(let i=0;i<70;i++){const a=rnd(0,TAU),r0=rnd(20,60),r1=r0+rnd(30,66);g.lineWidth=rnd(.6,2);g.beginPath();g.moveTo(128+Math.cos(a)*r0,128+Math.sin(a)*r0);g.lineTo(128+Math.cos(a)*r1,128+Math.sin(a)*r1);g.stroke()}
+ return new TT.CanvasTexture(cv)}
+/* a charred, cracked mark stuck onto a model where something hit it (moves with the model) */
+function decal(o,wp,up,size,str){const ms=mSize(o)||size*5;_r0.copy(wp).addScaledVector(up,ms*2+size);_rd.copy(up).negate();RC.set(_r0,_rd);RC.far=ms*4+size*2;try{if(RC.layers&&RC.layers.enableAll)RC.layers.enableAll()}catch(e){}
+ let h=null;try{for(const x of RC.intersectObject(o.group,true)){if(x.object.isMesh&&!x.object.userData.rdec&&x.face){h=x;break}}}catch(e){}if(!h)return false;
+ const arr=o.__dec||(o.__dec=[]);if(arr.length>=40){const q=arr.shift();if(q.parent)q.parent.remove(q);q.geometry.dispose();q.material.dispose()}
+ const n=h.face.normal.clone().transformDirection(h.object.matrixWorld);if(n.dot(up)<-.2)n.negate();
+ const m=new TT.Mesh(new TT.PlaneGeometry(1,1),new TT.MeshBasicMaterial({map:CRK||(CRK=crackTex()),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4,opacity:Math.min(1,.5+.5*str),toneMapped:false}));
+ m.userData.rdec=1;m.renderOrder=3;m.position.copy(h.point).addScaledVector(n,size*.004);m.quaternion.setFromUnitVectors(Z,n);m.rotateZ(rnd(0,TAU));m.scale.setScalar(size);sc.add(m);m.updateMatrixWorld(true);h.object.attach(m);m.layers.mask=h.object.layers.mask;arr.push(m);return true}
+/* rain hitting near a model leaves a small burn & crack on it */
+function scar(a,dir){for(const o of MOD.items){if(o===a.m||o.mode!=='surface'||o.destroyed||!o.group.visible)continue;dirOf(o.lat,o.lon,_bd);const d=Math.acos(Math.min(1,dir.dot(_bd)))*RAD,sz=mSize(o);if(!(sz>0)||d>sz*.8+a.unit*.5)continue;
+ const up=dir.clone().applyQuaternion(P.quaternion),wp=toW(dir,o.alt||0,new V);
+ if(!decal(o,wp,up,sz*rnd(.07,.14),rnd(.5,1))){const c=toW(_bd,o.alt||0,new V).lerp(wp,.5);decal(o,c,up,sz*rnd(.07,.14),rnd(.5,1))}}}
+function stormInit(a){const R0=a.R0,n=LOW?380:900,g=new TT.BufferGeometry(),p=new Float32Array(n*3),c=new Float32Array(n*3);g.setAttribute('position',new TT.BufferAttribute(p,3));g.setAttribute('color',new TT.BufferAttribute(c,3));
+ const pts=new TT.Points(g,new TT.PointsMaterial({size:R0*.18,sizeAttenuation:true,vertexColors:true,map:R_.glow,transparent:true,depthWrite:false,opacity:0}));pts.frustumCulled=false;pts.renderOrder=16;a.portal.add(pts);
+ const WR=Math.max(R0*14,a.suckR*1.2),ds=[];for(let i=0;i<n;i++)ds.push({a:rnd(0,TAU),r:rnd(.08,1)*WR,h:rnd(0,1),s:rnd(.6,1.4),g:rnd(.35,.7)});a.dust={pts,p,c,ds,n,WR};
+ const au=[],fl=[];for(let i=0;i<(LOW?16:30);i++){const s=R_.mkS(0);s.material.blending=TT.NormalBlending;s.renderOrder=21;s.visible=false;a.portal.add(s);au.push({s,a:rnd(0,TAU),h:rnd(.05,.95),r:rnd(1.6,4.2),k:rnd(.7,1.3),f:0})}
+ for(let i=0;i<6;i++){const s=R_.mkS(0);s.renderOrder=22;s.visible=false;a.portal.add(s);fl.push({s,t:9})}
+ a.aura={au,fl};a.wind=new Map();a.capSet=new Set(a.cap.map(c=>c.o))}
+function stormStep(a,dt,t,gl,pk,HS,BH,hb){
+ const W=sm(t/SUCK)*(t>a.endAll-3?1-sm((t-a.endAll+3)/2.5):1)*(.6+.4*c01(gl)),D=a.dust;
+ if(D){D.pts.material.opacity=.55*W;D.pts.material.size=a.R0*.16+D.WR*.004;
+  for(let i=0;i<D.n;i++){const q=D.ds[i],rn=Math.max(q.r/D.WR,.04);q.a+=dt*W*q.s*(1.2/rn);q.r-=dt*W*D.WR*.05*q.s;q.h+=dt*W*(.15+.6*(1-rn))*q.s;
+   if(q.r<D.WR*.05||q.h>1){q.r=D.WR*rnd(.6,1);q.h=rnd(0,.1);q.a=rnd(0,TAU)}
+   const i3=i*3,b=q.g*(1-q.h)*(.4+.6*(1-rn));D.p[i3]=Math.cos(q.a)*q.r;D.p[i3+1]=Math.sin(q.a)*q.r;D.p[i3+2]=q.h*q.h*a.R0*6*(1+3*(1-rn));D.c[i3]=b*.62;D.c[i3+1]=b*.55;D.c[i3+2]=b*.47}
+  D.pts.geometry.attributes.position.needsUpdate=true;D.pts.geometry.attributes.color.needsUpdate=true;
+  /* the wind physically shoves the models around the cube (not the ones it swallows): light ones slide round with the vortex, all of them sway */
+  if(W>.01)for(const o of MOD.items){if(o===a.m||a.capSet.has(o)||o.mode!=='surface'||o.destroyed||!o.group.visible)continue;
+   dirOf(o.lat,o.lon,_bd);const d=Math.acos(Math.min(1,a.dir.dot(_bd)))*RAD;if(d>D.WR||d<1e-6)continue;
+   let w=a.wind.get(o);if(!w){w={q:o.localQ.clone(),k:rnd(0,TAU)};a.wind.set(o,w)}
+   const f=W*(1-d/D.WR),mass=Math.max(.3,mSize(o)/Math.max(a.unit,1e-6)),v=f*a.unit*1.5/mass,dph=Math.min(.2,v*dt/d);
+   _c.copy(_bd).applyAxisAngle(a.dir,dph);o.lat=Math.asin(Math.max(-1,Math.min(1,_c.y)));o.lon=Math.atan2(-_c.z,_c.x);
+   o.localQ.copy(w.q).multiply(_q.setFromAxisAngle(_e2.set(Math.cos(w.k),0,Math.sin(w.k)),f*.22/Math.sqrt(mass)*(.6+.4*Math.sin(t*4+w.k))))}}
+ const A=a.aura;if(A){const pr=Math.max(a.R0*.4,HS*.014),vis=pk>.01;
+  for(const c of A.au){c.s.visible=vis;if(!vis)continue;c.a+=dt*(.5+.9/c.r)*c.k;const z=BH*hb*c.h,r=pr*c.r*(1+.6*c.h);c.s.position.set(Math.cos(c.a)*r,Math.sin(c.a)*r,z);c.s.scale.setScalar(pr*(2.2+1.6*c.k)*(1+c.h));
+   c.f=Math.max(0,c.f-dt*5);const L=.1+.12*c.h;c.s.material.color.setRGB(L*.9+c.f*.8,L+c.f*.75,L*1.35+c.f);c.s.material.opacity=pk*.62}
+  if(vis&&Math.random()<dt*6){const c=A.au[(Math.random()*A.au.length)|0];c.f=1;const f=A.fl.find(x=>x.t>.25);if(f){f.t=0;f.s.position.copy(c.s.position);f.s.scale.setScalar(c.s.scale.x*1.6);f.s.material.color.setHSL(rnd(.62,.8),.6,.8)}}
+  for(const f of A.fl){f.t+=dt;f.s.visible=vis&&f.t<.25;if(f.s.visible)f.s.material.opacity=(1-f.t/.25)*(Math.random()<.5?1:.4)}
+  if(vis&&a.bolt&&Math.random()<dt*1.2*pk)try{strike(a)}catch(e){}}}
+function windEnd(a){if(a.wind)for(const [o,w] of a.wind)o.localQ.copy(w.q)}
+/* the end: the cube goes off in a blinding flash. Ground is scorched; models are charred by distance (close ones glow and blacken, far ones are singed) */
+function boom(a){const m=a.m,dir=a.dir.clone(),unit=a.unit,BR=Math.max(unit*90,.25),g=new TT.Group();sc.add(g);
+ const fl=R_.mkS(1),fl2=R_.mkS(1);fl.renderOrder=fl2.renderOrder=24;g.add(fl);g.add(fl2);
+ const ring=new TT.Mesh(new TT.RingGeometry(.86,1,72),new TT.MeshBasicMaterial({blending:AM,transparent:true,depthWrite:false,side:TT.DoubleSide,toneMapped:false}));ring.frustumCulled=false;ring.renderOrder=23;g.add(ring);
+ const sco=new TT.Mesh(new TT.CircleGeometry(1,64),new TT.MeshBasicMaterial({map:SCO||(SCO=scorchTex()),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2,opacity:0}));sco.frustumCulled=false;sco.renderOrder=2;g.add(sco);
+ const hit=[];
+ for(const o of MOD.items){if(o===m||o.mode!=='surface'||o.destroyed||!o.group.visible)continue;dirOf(o.lat,o.lon,_bd);const d=Math.acos(Math.min(1,dir.dot(_bd)))*RAD;if(d>BR)continue;
+  const sev=Math.pow(1-d/BR,1.2),mo=[];for(const x of(o.mats||[])){if(!x.color)continue;mo.push({x,e:x.emissive?x.emissive.clone():null,i:x.emissiveIntensity||0});x.color.lerp(CH,.9*sev)}hit.push({o,sev,mo});
+  const sz=mSize(o),up=_bd.clone().applyQuaternion(P.quaternion),wp=toW(_bd,o.alt||0,new V),nD=Math.ceil(sev*7);
+  for(let k=0;k<nD;k++)decal(o,wp.clone().addScaledVector(_e2.set(rnd(-1,1),rnd(-1,1),rnd(-1,1)),sz*.35),up,sz*rnd(.12,.3)*(.6+sev),sev)}
+ booms.push({g,fl,fl2,ring,sco,hit,dir,BR,unit,t:0,m,gone:false});
+ try{if(window.VXP)VXP.add(dir.clone().multiplyScalar(RAD+.01),Math.pow(Math.max(unit*1000*8,40)/2.2,1/.3),{type:1})}catch(e){}
+ try{modUi('💥 The Rainbow Rift cube exploded'+(hit.length?': '+hit.length+' model(s) scorched':''))}catch(e){}}
+function stepBooms(dt){const cp=cam.position;
+ for(let i=booms.length-1;i>=0;i--){const b=booms[i];b.t+=dt;const t=b.t,L=R_?R_.lay||0:0;b.g.traverse(o=>o.layers.set(L));if(L===1&&typeof OVL!=='undefined'&&t<420)OVL.t=performance.now();
+  toW(b.dir,0,_a);_b.copy(b.dir).applyQuaternion(P.quaternion);const pos=_c.copy(_a).addScaledVector(_b,b.unit*.8),fk=t<.18?sm(t/.18):Math.exp(-(t-.18)*1.6);
+  b.fl.visible=b.fl2.visible=fk>.003;b.fl.position.copy(pos);b.fl.scale.setScalar(b.BR*(.15+1.1*sm(t/.4)));b.fl.material.color.setRGB(1,1-.25*c01(t/2),1-.6*c01(t/1.5)).multiplyScalar(2.5*fk);b.fl.material.opacity=c01(fk);
+  b.fl2.position.copy(pos);b.fl2.scale.setScalar(b.BR*.12*(1+t));b.fl2.material.color.setRGB(3,3,3).multiplyScalar(fk);b.fl2.material.opacity=c01(fk*1.3);
+  const rk=c01(t/2.2);b.ring.visible=rk<1;b.ring.position.copy(_a).addScaledVector(_b,b.unit*.1);b.ring.quaternion.setFromUnitVectors(Z,_b);b.ring.scale.setScalar(Math.max(1e-4,b.BR*1.25*Math.sqrt(rk)));b.ring.material.color.setRGB(1,.85,.6).multiplyScalar(1.6*(1-rk));
+  b.sco.position.copy(_a).addScaledVector(_b,Math.max(b.unit*.02,.0004));b.sco.quaternion.setFromUnitVectors(Z,_b);b.sco.scale.setScalar(b.BR*.55*(.3+.7*sm(t/1.4)));b.sco.material.opacity=.92*sm(t/.8)*(t>300?Math.max(0,1-(t-300)/120):1);
+  if(R_&&R_.light&&t<5){R_.light.position.copy(pos);R_.light.color.setRGB(1,.85,.65);R_.light.distance=b.BR*6;R_.light.intensity=30*fk;if(t+dt>=5)R_.light.intensity=0}
+  const fe=document.getElementById('astflash');if(fe){if(t<1.5)fe.style.opacity=(fk*.95*c01(1-cp.distanceTo(pos)/(b.BR*40))).toFixed(3);else if(!b.fz){b.fz=1;fe.style.opacity='0'}}
+  if(t<6)for(const h of b.hit)for(const s of h.mo){if(!s.e)continue;const k=h.sev*Math.exp(-t/4);s.x.emissive.copy(s.e).lerp(OR,c01(k*1.5));s.x.emissiveIntensity=s.i+k*3}
+  else if(!b.cool){b.cool=true;for(const h of b.hit)for(const s of h.mo)if(s.e){s.x.emissive.copy(s.e);s.x.emissiveIntensity=s.i}}
+  if(!b.gone&&t>.12){b.gone=true;try{modRemove(b.m.id)}catch(e){try{b.m.group.visible=false}catch(_){}}}
+  if(t>420){sc.remove(b.g);b.g.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material&&o.material.dispose)o.material.dispose()});booms.splice(i,1)}}}
+
 function rb(h,s,v,o,i){h=(((h%1)+1)%1)*6;const f=h-Math.floor(h),p=v*(1-s),q=v*(1-s*f),t=v*(1-s*(1-f));switch(Math.floor(h)){case 0:o[i]=v;o[i+1]=t;o[i+2]=p;break;case 1:o[i]=q;o[i+1]=v;o[i+2]=p;break;case 2:o[i]=p;o[i+1]=v;o[i+2]=t;break;case 3:o[i]=p;o[i+1]=q;o[i+2]=v;break;case 4:o[i]=t;o[i+1]=p;o[i+2]=v;break;default:o[i]=v;o[i+1]=p;o[i+2]=q}}
 const dirOf=(la,lo,o)=>o.set(Math.cos(la)*Math.cos(lo),Math.sin(la),-Math.cos(la)*Math.sin(lo));
 const toW=(d,alt,o)=>{o.copy(d).multiplyScalar(RAD+GB+alt).applyQuaternion(P.quaternion).add(P.position);o.y+=DR;return o};
@@ -9652,6 +9729,7 @@ function res(){
  return R_={glow,mkS,beams,imps,sp,light,lay:0};
 }
 function impact(a,dir,hue){
+ try{scar(a,dir)}catch(e){}
  a.landed.push(dir.clone());if(a.landed.length>40)a.landed.shift();
  const I=res().imps.find(x=>!x.on);if(!I)return;
  I.on=true;I.t=0;I.hue=hue;I.dir.copy(dir);I.ring.visible=true;I.fl.visible=true;
@@ -9888,6 +9966,7 @@ function launch(m){
   cap.push({o,w:wt,ang,ph:Math.atan2(w.dot(e),w.dot(n)),e,n,lat:o.lat,lon:o.lon,alt:o.alt,q:o.localQ.clone(),sc:o.group.scale.clone(),vis:o.group.visible,tos:o.tos,gone:false});o.tos=null}
  runs.push({m,ud,t:0,dir,unit,R0,H,suckR,portal,disc,rings,vpts,vp,vc,vs,pillar,pillar2,core,cap,fired:false,acc:0,F:rnd(50,100),landed:[],closing:false,big});
  try{buildSky(runs[runs.length-1],m)}catch(e){console.warn('rift sky',e)}
+ try{stormInit(runs[runs.length-1])}catch(e){console.warn('rift storm',e)}
  try{modUi('Rainbow Rift: portal open — '+cap.length+' small model(s) pulled in'+(big?', '+big+' bigger one(s) left alone':'')+'…')}catch(e){}
 }
 function layerSync(){
@@ -9917,6 +9996,7 @@ function stepRun(a,dt,idx){
  if(a.tip){a.tip.visible=pk>0;if(a.tip.visible){a.tip.position.z=BH*hb;a.tip.scale.setScalar(Math.max(a.R0*3,HS*.35)*pk);a.tip.material.color.setHSL((t*.8)%1,.6,.8);a.tip.material.opacity=pk}}
  R_.light.position.copy(a.portal.position).addScaledVector(_b,a.R0);R_.light.color.setHSL((t*.5)%1,.8,.6);R_.light.distance=Math.max(a.R0*40,RX*3);R_.light.intensity=Math.min(8,gl*3+flare*5);
  stepSky(a,dt,t,gl);
+ try{stormStep(a,dt,t,gl,pk,HS,BH,hb)}catch(e){if(!window.__rsE){window.__rsE=1;console.warn('rift storm',e)}}
  // suction: only models smaller than the cube are pulled in; similar-sized ones are only tugged and released, bigger ones are ignored
  const p=sm(t/SUCK);
  for(const c of a.cap){const o=c.o;if(c.done)continue;
@@ -9933,12 +10013,14 @@ function stepRun(a,dt,idx){
  if(t>=Math.max(end,a.endAll||0)&&!R_.beams.some(b=>b.on&&b.a===a))finish(a,idx);
 }
 function finish(a,idx){
+ try{windEnd(a)}catch(e){}
  for(const c of a.cap){const o=c.o;if(c.done){o.tos=null;continue}o.lat=c.lat;o.lon=c.lon;o.alt=c.alt;o.localQ.copy(c.q);o.group.scale.copy(c.sc);o.group.visible=c.vis;o.tos=null}
  if(a.burn)for(const [o,rec] of a.burn){for(const [x,s] of rec.mo){x.color.copy(s.c).lerp(CH,.82*rec.b*.8);x.emissive.copy(s.e);x.emissiveIntensity=s.i}o.__sc=rec.b*.8}
  if(a.sky){sc.remove(a.sky);a.sky.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose()})}
  sc.remove(a.portal);a.portal.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose()});
  R_.light.intensity=0;a.m.alt=0;a.m.riftBusy=false;a.ud.active=false;a.ud.gl=0;runs.splice(idx,1);
  try{modUi('Rainbow Rift cascade complete — models restored.')}catch(e){}
+ try{boom(a)}catch(e){console.warn('rift boom',e)}
 }
 function create(){
  const ex=MOD.items.find(x=>x.builtin==='rainbow-rift');if(ex){MOD.selected=ex.id;modUi('Rainbow Rift is already in the scene.');return}
@@ -9976,6 +10058,7 @@ function tick(now){
     ud.glow.scale.setScalar((2.2+ud.gl*5.5)*(1+.05*Math.sin(ud.t*40*Math.min(1,ud.gl))));ud.glow.material.opacity=c01(.25+ud.gl*.6);ud.glow.material.color.setHSL((ud.t*.3)%1,.6,.7)}
    if(R_){for(let i=runs.length-1;i>=0;i--)stepRun(runs[i],dt,i);
     for(const b of R_.beams)if(b.on)stepBeam(b,dt);stepImpacts(dt);layerSync()}}
+  if(booms.length){RAD=B[S.body][0];GB=GBf();DR=DRP();try{layerSync()}catch(e){}stepBooms(dt)}
  }catch(err){console.warn('rainbow rift',err)}
  requestAnimationFrame(tick);
 }
